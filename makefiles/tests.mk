@@ -415,9 +415,15 @@ $(HARECACHE)/tests_29_unarithm.ssa: $(tests_29_unarithm_ha) $(HARECACHE)/rt.td $
 	@$(TDENV) $(BINOUT)/harec $(HARECFLAGS) -o $@ $(tests_29_unarithm_ha)
 
 
-tests/30-reduction: tests/30-reduction.o $(test_objects)
-	@printf 'CCLD\t%s\n' '$@'
-	@$(CC) $(LDFLAGS) $(LIBS) -o $@ tests/30-reduction.o $(test_objects)
+tests/30-reduction: $(HARECACHE)/rt.o $(HARECACHE)/tests_30_reduction.o
+	@printf 'LD\t%s\t\n' '$@'
+	@$(LD) $(LDLINKFLAGS) -T $(RTSCRIPT) -o $@ $(HARECACHE)/rt.o $(HARECACHE)/tests_30_reduction.o
+
+tests_30_reduction_ha = tests/30-reduction.ha
+$(HARECACHE)/tests_30_reduction.ssa: $(tests_30_reduction_ha) $(HARECACHE)/rt.td $(BINOUT)/harec
+	@mkdir -p -- $(HARECACHE)
+	@printf 'HAREC\t%s\n' '$@'
+	@$(TDENV) $(BINOUT)/harec $(HARECFLAGS) -o $@ $(tests_30_reduction_ha)
 
 
 tests/31-postfix: $(HARECACHE)/rt.o $(HARECACHE)/tests_31_postfix.o
