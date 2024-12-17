@@ -105,7 +105,7 @@ check: $(BINOUT)/harec $(tests)
 	@$(TDENV) ./tests/run
 
 install: $(BINOUT)/harec
-	install -Dm755 $(BINOUT)/harec $(DESTDIR)$(BINDIR)/harec
+	install -Dm755 -- $(BINOUT)/harec $(DESTDIR)$(BINDIR)/harec
 
 uninstall:
 	rm -- '$(DESTDIR)$(BINDIR)/harec'
