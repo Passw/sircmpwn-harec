@@ -59,7 +59,7 @@ $(BINOUT)/harec: $(harec_objects)
 	@$(CC) $(LDFLAGS) -o $@ $(harec_objects) $(LIBS)
 
 .SUFFIXES:
-.SUFFIXES: .ssa .td .c .o .s .scd .1 .5
+.SUFFIXES: .ssa .td .c .o .s
 
 src/check.o: $(headers)
 src/emit.o: $(headers)
