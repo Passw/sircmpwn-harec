@@ -1,5 +1,5 @@
 # install locations
-PREFIX = /usr/local
+PREFIX = $(HOME)/INSTALL/harec/latest
 BINDIR = $(PREFIX)/bin
 
 # variables used during build
