@@ -979,6 +979,36 @@ rune_unparse(uint32_t c)
 }
 
 static void
+discard_balanced_tokens(struct lexer *lexer, enum lexical_token close)
+{
+	struct token tok;
+	for (;;) {
+		lex(lexer, &tok);
+		if (tok.token == close) {
+			break;
+		}
+
+		switch (tok.token) {
+		case T_LPAREN:
+			discard_balanced_tokens(lexer, T_RPAREN);
+			break;
+		case T_LBRACKET:
+			discard_balanced_tokens(lexer, T_RBRACKET);
+			break;
+		case T_LBRACE:
+			discard_balanced_tokens(lexer, T_RBRACE);
+			break;
+		case T_RPAREN:
+		case T_RBRACKET:
+		case T_RBRACE:
+			error(lexer->loc, "mismatched bracket");
+		default:
+			break;
+		}
+	}
+}
+
+static void
 lex_annotation(struct lexer *lexer)
 {
 	// Scan and discard annotations
@@ -1013,53 +1043,15 @@ lex_annotation(struct lexer *lexer)
 		}
 	}
 
-	switch (lex(lexer, &tok))
-	{
+	switch (lex(lexer, &tok)) {
 	case T_LPAREN:
+		discard_balanced_tokens(lexer, T_RPAREN);
 		break;
 	case T_RBRACKET:
 		goto exit;
 	default:
 		error(lexer->loc, "invalid annotation (expected '(' or ']')");
 	}
-
-	// balanced list of tokens
-	int sp = 0;
-	enum lexical_token stack[32] = {T_LPAREN, 0};
-
-	do {
-		if (sp + 1 >= 32) {
-			error(lexer->loc, "annotation is too nested");
-		}
-
-		enum lexical_token want = 0;
-		ltok = lex(lexer, &tok);
-		switch (ltok) {
-		case T_LPAREN:
-		case T_LBRACE:
-		case T_LBRACKET:
-			stack[++sp] = ltok;
-			break;
-		case T_RPAREN:
-			want = T_LPAREN;
-			break;
-		case T_RBRACE:
-			want = T_LBRACE;
-			break;
-		case T_RBRACKET:
-			want = T_LBRACKET;
-			break;
-		default:
-			break;
-		}
-
-		if (want != 0) {
-			ltok = stack[sp--];
-			if (ltok != want) {
-				error(lexer->loc, "unbalanced tokens in annotation");
-			}
-		}
-	} while (sp >= 0);
 
 	if (lex(lexer, &tok) != T_RBRACKET) {
 		error(lexer->loc, "invalid annotation (expected ']')");
