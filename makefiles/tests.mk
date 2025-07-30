@@ -138,12 +138,12 @@ $(HARECACHE)/tests_05_implicit_casts.ssa: $(tests_05_implicit_casts_ha) $(HARECA
 	@$(TDENV) $(BINOUT)/harec $(HARECFLAGS) -o $@ $(tests_05_implicit_casts_ha)
 
 
-tests/06-structs: $(HARECACHE)/rt.o $(HARECACHE)/tests_06_structs.o
+tests/06-structs: $(HARECACHE)/rt.o $(HARECACHE)/testmod.o $(HARECACHE)/tests_06_structs.o
 	@printf 'LD\t%s\t\n' '$@'
-	@$(LD) $(LDLINKFLAGS) -T $(RTSCRIPT) -o $@ $(HARECACHE)/rt.o $(HARECACHE)/tests_06_structs.o
+	@$(LD) $(LDLINKFLAGS) -T $(RTSCRIPT) -o $@ $(HARECACHE)/rt.o $(HARECACHE)/testmod.o $(HARECACHE)/tests_06_structs.o
 
 tests_06_structs_ha = tests/06-structs.ha
-$(HARECACHE)/tests_06_structs.ssa: $(tests_06_structs_ha) $(HARECACHE)/rt.td $(BINOUT)/harec
+$(HARECACHE)/tests_06_structs.ssa: $(tests_06_structs_ha) $(HARECACHE)/rt.td $(HARECACHE)/testmod.td $(BINOUT)/harec
 	@mkdir -p -- $(HARECACHE)
 	@printf 'HAREC\t%s\n' '$@'
 	@$(TDENV) $(BINOUT)/harec $(HARECFLAGS) -o $@ $(tests_06_structs_ha)
