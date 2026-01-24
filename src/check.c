@@ -3509,9 +3509,31 @@ check_expr_unarithm(struct context *ctx,
 	expr->type = EXPR_UNARITHM;
 
 	struct expression *operand = xcalloc(1, sizeof(struct expression));
-	check_expression(ctx, aexpr->unarithm.operand, operand, NULL);
 	expr->unarithm.operand = operand;
 	expr->unarithm.op = aexpr->unarithm.op;
+
+	const struct type *operand_hint = NULL;
+	if (hint) {
+		switch (expr->unarithm.op) {
+		case UN_ADDRESS:
+			if (hint->storage == STORAGE_SLICE) {
+				operand_hint = type_store_lookup_array(ctx,
+					aexpr->loc, hint->array.members,
+					SIZE_UNDEFINED, false);
+			} else if (hint->storage == STORAGE_POINTER) {
+				operand_hint = hint->pointer.referent;
+			}
+			break;
+		case UN_DEREF:
+			operand_hint = type_store_lookup_pointer(
+				ctx, aexpr->loc, hint, false);
+			break;
+		default:
+			break;
+		}
+	}
+
+	check_expression(ctx, aexpr->unarithm.operand, operand, operand_hint);
 	if (operand->result->storage == STORAGE_INVALID) {
 		mkerror(expr);
 		return;

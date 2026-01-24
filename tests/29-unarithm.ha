@@ -18,6 +18,8 @@ fn addr() void = {
 	assert(*q == 42);
 	*{ yield q; } = 12;
 	assert(*q == 12);
+	let w: []size = &[1, 2, 3];
+	let e: **size = &(&5);
 
 	compile(status::CHECK, "
 		export fn main() void = { &null; };
@@ -54,6 +56,7 @@ fn bnot() void = {
 };
 
 fn deref() void = {
+	let x: size = *&5;
 	assert(*{ yield &42; } == 42);
 	assert(*switch (0) { case => yield &42; } == 42);
 	assert(*match (0: (int | void)) { case => yield &42; } == 42);
