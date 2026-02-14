@@ -1350,6 +1350,24 @@ builtin_types_init(const char *target)
 		builtin_type_str.align = 8;
 		builtin_type_valist.size = 24;
 		builtin_type_valist.align = 8;
+	} else if (strcmp(target, "ppc64le") == 0) {
+		builtin_type_f64.align = 8;
+		builtin_type_int.size = 4;
+		builtin_type_int.align = 4;
+		builtin_type_uint.size = 4;
+		builtin_type_uint.align = 4;
+		builtin_type_uintptr.size = 8;
+		builtin_type_uintptr.align = 8;
+		builtin_type_i64.align = 8;
+		builtin_type_u64.align = 8;
+		builtin_type_null.size = 8;
+		builtin_type_null.align = 8;
+		builtin_type_size.size = 8;
+		builtin_type_size.align = 8;
+		builtin_type_str.size = 24;
+		builtin_type_str.align = 8;
+		builtin_type_valist.size = 8;
+		builtin_type_valist.align = 8;
 	} else {
 		xfprintf(stderr, "Unsupported or unrecognized target: %s\n", target);
 		exit(EXIT_USER);
