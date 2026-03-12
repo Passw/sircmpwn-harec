@@ -2523,6 +2523,76 @@ check_expr_if(struct context *ctx,
 }
 
 static void
+check_expr_if_let(struct context *ctx,
+	const struct ast_expression *aexpr,
+	struct expression *expr,
+	const struct type *hint)
+{
+	expr->type = EXPR_IF_LET;
+
+	const struct ast_expression_binding *abinding = &aexpr->_if.binding->binding;
+	if (abinding->next) {
+		error(ctx, aexpr->loc, expr, "Cannot have multiple bindings in if (let) expression");
+		return;
+	}
+	if (abinding->names.next) {
+		// TODO: Why not?
+		error(ctx, aexpr->loc, expr, "Cannot unpack if (let) binding as tuple");
+		return;
+	}
+	if (abinding->type == NULL) {
+		error(ctx, aexpr->loc, expr, "if (let) binding must declare desired type");
+		return;
+	}
+
+	const struct type *type = type_store_lookup_atype(ctx, abinding->type);
+	struct expression *init = xcalloc(1, sizeof(struct expression));
+	check_expression(ctx, abinding->initializer, init, NULL);
+	expr->_if.initializer = init;
+
+	// Process true branch w/binding and a new scope
+	scope_push(&ctx->scope, SCOPE_IF);
+	expr->_if.object = scope_insert(ctx->scope, O_BIND,
+		abinding->names.name, abinding->names.name,
+		type, NULL);
+
+	struct match_context mctx = {0};
+	if (!begin_check_match(ctx, &mctx, expr, init->result, abinding->initializer->loc)) {
+		return;
+	}
+	if (!check_match_case(&mctx, type, expr, abinding->initializer->loc)) {
+		return;
+	}
+
+	struct expression *true_branch = xcalloc(1, sizeof(struct expression));
+	check_expression(ctx, aexpr->_if.true_branch, true_branch, hint);
+	scope_pop(&ctx->scope);
+
+	// Process false branch in the parent scope
+	struct expression *false_branch = xcalloc(1, sizeof(struct expression));
+	if (aexpr->_if.false_branch) {
+		check_expression(ctx, aexpr->_if.false_branch, false_branch, hint);
+	} else {
+		false_branch->type = EXPR_LITERAL;
+		false_branch->result = &builtin_type_void;
+	}
+	const struct type *fresult = false_branch->result;
+	if (hint && type_is_assignable(ctx, hint, true_branch->result)
+			&& type_is_assignable(ctx, hint, fresult)) {
+		expr->result = hint;
+	} else {
+		const struct type *tags[] = { fresult, true_branch->result };
+		struct type_tagged_union tagged = { .types = tags, .len = 2 };
+		expr->result = type_store_reduce_result(ctx, aexpr->loc, &tagged);
+	}
+	true_branch = lower_implicit_cast(ctx, expr->result, true_branch);
+	false_branch = lower_implicit_cast(ctx, expr->result, false_branch);
+
+	expr->_if.true_branch = true_branch;
+	expr->_if.false_branch = false_branch;
+}
+
+static void
 check_expr_match(struct context *ctx,
 	const struct ast_expression *aexpr,
 	struct expression *expr,
@@ -3761,6 +3831,9 @@ check_expression(struct context *ctx,
 		break;
 	case EXPR_IF:
 		check_expr_if(ctx, aexpr, expr, hint);
+		break;
+	case EXPR_IF_LET:
+		check_expr_if_let(ctx, aexpr, expr, hint);
 		break;
 	case EXPR_INSERT:
 		check_expr_append_insert(ctx, aexpr, expr, hint);

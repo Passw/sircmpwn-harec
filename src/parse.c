@@ -1741,12 +1741,24 @@ static struct ast_expression *
 parse_if_expression(struct lexer *lexer)
 {
 	struct ast_expression *exp = mkexpr(lexer->loc);
-	exp->type = EXPR_IF;
-
 	struct token tok = {0};
 
 	want(lexer, T_LPAREN, &tok);
-	exp->_if.cond = parse_expression(lexer);
+
+	switch (lex(lexer, &tok)) {
+	case T_LET:
+	case T_CONST:
+		unlex(lexer, &tok);
+		exp->type = EXPR_IF_LET;
+		exp->_if.binding = parse_binding_list(lexer, false);
+		break;
+	default:
+		unlex(lexer, &tok);
+		exp->type = EXPR_IF;
+		exp->_if.cond = parse_expression(lexer);
+		break;
+	}
+
 	want(lexer, T_RPAREN, &tok);
 
 	exp->_if.true_branch = parse_expression(lexer);

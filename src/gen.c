@@ -2729,6 +2729,52 @@ gen_expr_if_with(struct gen_context *ctx,
 }
 
 static struct gen_value
+gen_expr_if_let_with(struct gen_context *ctx,
+	const struct expression *expr,
+	struct gen_value *out)
+{
+	struct gen_value gvout = gv_void;
+	if (!out) {
+		gvout = mkgtemp(ctx, expr->result, ".%d");
+	}
+
+	struct qbe_statement lfalse, lend;
+	struct qbe_value bfalse = mklabel(ctx, &lfalse, "false.%d");
+	struct qbe_value bend = mklabel(ctx, &lend, ".%d");
+
+	struct match_gen_context mctx = {0};
+	struct gen_value object = gen_expr(ctx, expr->_if.initializer);
+	begin_gen_match(ctx, &mctx, object);
+
+	const struct scope_object *obj = expr->_if.object;
+	struct gen_value value = gen_match_test(&mctx,
+		obj->type, NULL, &bfalse);
+
+	struct gen_binding *gb = xcalloc(1, sizeof(struct gen_binding));
+	gb->value = mkgtemp(ctx, obj->type, "binding.%d");
+	gb->object = obj;
+	gb->next = ctx->bindings;
+	ctx->bindings = gb;
+
+	struct qbe_value qv = mklval(ctx, &gb->value);
+	enum qbe_instr alloc = alloc_for_align(obj->type->align);
+	struct qbe_value sz = constl(obj->type->size);
+	pushprei(ctx->current, &qv, alloc, &sz, NULL);
+
+	gen_store(ctx, gb->value, value);
+
+	gen_expr_branch(ctx, expr->_if.true_branch, gvout, out);
+	if (expr->_if.true_branch->result->storage != STORAGE_NEVER) {
+		pushi(ctx->current, NULL, Q_JMP, &bend, NULL);
+	}
+
+	push(&ctx->current->body, &lfalse);
+	gen_expr_branch(ctx, expr->_if.false_branch, gvout, out);
+	push(&ctx->current->body, &lend);
+	return gvout;
+}
+
+static struct gen_value
 gen_expr_append_insert_with(struct gen_context *ctx,
 	const struct expression *expr,
 	struct gen_value *out)
@@ -3378,6 +3424,9 @@ gen_expr(struct gen_context *ctx, const struct expression *expr)
 		break;
 	case EXPR_IF:
 		out = gen_expr_if_with(ctx, expr, NULL);
+		break;
+	case EXPR_IF_LET:
+		out = gen_expr_if_let_with(ctx, expr, NULL);
 		break;
 	case EXPR_LEN:
 		out = gen_expr_len(ctx, expr);

@@ -26,6 +26,7 @@ enum expr_type {
 	EXPR_FOR,
 	EXPR_FREE,
 	EXPR_IF,
+	EXPR_IF_LET,
 	EXPR_INSERT,
 	EXPR_LEN,
 	EXPR_MEASURE = EXPR_LEN, // for use in AST
@@ -282,7 +283,15 @@ struct expression_free {
 };
 
 struct expression_if {
-	struct expression *cond;
+	union {
+		// EXPR_IF
+		struct expression *cond;
+		// EXPR_IF_LET
+		struct {
+			const struct scope_object *object;
+			struct expression *initializer;
+		};
+	};
 	struct expression *true_branch, *false_branch;
 };
 

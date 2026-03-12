@@ -249,7 +249,12 @@ struct ast_expression_free {
 };
 
 struct ast_expression_if {
-	struct ast_expression *cond;
+	union {
+		// EXPR_IF
+		struct ast_expression *cond;
+		// EXPR_IF_LET
+		struct ast_expression *binding;
+	};
 	struct ast_expression *true_branch, *false_branch;
 };
 
