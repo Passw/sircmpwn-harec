@@ -183,6 +183,131 @@ check_autodereference(struct context *ctx, struct location loc,
 	return type_dereference(ctx, type, true);
 }
 
+struct match_context {
+	struct context *ctx;
+	// Type of the object being matched
+	const struct type *otype;
+	// Type the object type refers to, in the case of a pointer
+	const struct type *ref_type;
+	// Derived from otype
+	bool is_tagged, is_nullable_ptr, is_tagged_ptr;
+};
+
+// Returns false if an error occured
+static bool
+begin_check_match(struct context *ctx,
+	struct match_context *mctx,
+	struct expression *expr,
+	const struct type *otype,
+	struct location oloc)
+{
+	mctx->ctx = ctx;
+	mctx->otype = otype;
+
+	const struct type *type = type_dealias(ctx, otype);
+	if (type->storage == STORAGE_INVALID) {
+		mkerror(expr);
+		return false;
+	}
+
+	mctx->is_tagged = type->storage == STORAGE_TAGGED;
+	mctx->is_nullable_ptr = false;
+	mctx->is_tagged_ptr = false;
+	mctx->ref_type = NULL;
+	if (type->storage == STORAGE_POINTER) {
+		mctx->is_nullable_ptr = type->pointer.nullable;
+		mctx->ref_type = type_dealias(ctx, type->pointer.referent);
+		if (mctx->ref_type->storage == STORAGE_INVALID) {
+			mkerror(expr);
+			return false;
+		}
+		mctx->is_tagged_ptr = mctx->ref_type->storage == STORAGE_TAGGED;
+
+	}
+	if (!mctx->is_tagged && !mctx->is_nullable_ptr && !mctx->is_tagged_ptr) {
+		error(ctx, oloc, expr,
+			"Value is not tagged union, pointer to tagged union, or nullable pointer type");
+		return false;
+	}
+	return true;
+}
+
+static const char *
+check_match_case_nullable_ptr(struct match_context *mctx, const struct type *ctype)
+{
+	// match (e: nullable *ref_type) {
+	// case ctype =>
+	// Null has already been handled.
+	if (ctype->storage != STORAGE_POINTER) {
+		return "Match on nullable pointer: case is not null or pointer type";
+	} else if (mctx->ref_type != type_dealias(mctx->ctx, ctype->pointer.referent)) {
+		return "Match on nullable pointer: case has invalid pointer type";
+	}
+	return NULL;
+}
+
+static const char *
+check_match_case_tagged(struct match_context *mctx, const struct type *ctype)
+{
+	const struct type *type = type_dealias(mctx->ctx, mctx->otype);
+	// match (e: type) {
+	// case ctype =>
+	// TODO: Assign a score to tagged compatibility
+	// and choose the branch with the highest score.
+	if (!type_is_assignable(mctx->ctx, type, ctype)) {
+		return "Match on tagged union: case is not assignable to match type";
+	}
+	return NULL;
+}
+
+static const char *
+check_match_case_tagged_ptr(struct match_context *mctx, const struct type *ctype)
+{
+	// match (e: *ref_type) {
+	// case ctype =>
+	if (ctype->size == 0) {
+		if (!type_is_assignable(mctx->ctx, mctx->ref_type, ctype)) {
+			return "Match on pointer to tagged union: zero-sized case type is not assignable to match type";
+		}
+	} else if (ctype->storage == STORAGE_NULL) {
+		// XXX: The purpose of this branch is to prevent `x as null`.
+		// Should we allow that, though?
+		return "Cannot match with null in this context";
+	} else if (ctype->storage != STORAGE_POINTER) {
+		return "Match on pointer to tagged union: finite-sized case type is not a pointer";
+	} else if (!type_is_assignable(mctx->ctx, mctx->ref_type, ctype->pointer.referent)) {
+		return "Match on pointer to tagged union: case is not assignable to match type";
+	}
+	return NULL;
+}
+
+static bool
+check_match_case(struct match_context *mctx,
+         const struct type *ctype,
+         struct expression *expr,
+         struct location loc)
+{
+	const char *err_msg = NULL;
+
+	if (ctype->storage == STORAGE_NULL && mctx->is_nullable_ptr) {
+		// Ok in all cases.
+	} else if (mctx->is_nullable_ptr && !mctx->is_tagged_ptr) {
+		err_msg = check_match_case_nullable_ptr(mctx, ctype);
+	} else if (mctx->is_tagged_ptr) {
+		err_msg = check_match_case_tagged_ptr(mctx, ctype);
+	} else {
+		assert(mctx->is_tagged);
+		err_msg = check_match_case_tagged(mctx, ctype);
+	}
+
+	if (err_msg) {
+		error(mctx->ctx, loc, expr, "%s", err_msg);
+		return false;
+	}
+
+	return true;
+}
+
 static void
 check_expr_access(struct context *ctx,
 	const struct ast_expression *aexpr,
@@ -1560,45 +1685,17 @@ check_expr_cast(struct context *ctx,
 		mkerror(expr);
 		return;
 	}
+
+	struct match_context mctx = {0};
 	switch (aexpr->cast.kind) {
 	case C_ASSERTION:
 	case C_TEST:
-		if (primary->storage == STORAGE_POINTER) {
-			if (!primary->pointer.nullable) {
-				error(ctx, aexpr->cast.value->loc, expr,
-					"Expected a tagged union type or "
-					"a nullable pointer");
-				return;
-			}
-			if (secondary->storage != STORAGE_NULL
-					&& (secondary->storage != STORAGE_POINTER
-					|| primary->pointer.referent
-						!= secondary->pointer.referent
-					|| (secondary->pointer.nullable))) {
-				error(ctx, aexpr->cast.type->loc, expr,
-					"Can only type assert nullable pointer into non-nullable pointer of the same type or null");
-				return;
-			}
-			break;
-		}
-		if (primary->storage != STORAGE_TAGGED) {
-			error(ctx, aexpr->cast.value->loc, expr,
-				"Expected a tagged union type or "
-				"a nullable pointer");
+		if (!begin_check_match(ctx, &mctx, expr,
+	                       expr->cast.value->result,
+	                       aexpr->cast.value->loc)) {
 			return;
 		}
-		// secondary type must be a strict subset or a
-		// member of the primary type
-		if (!((tagged_subset_compat(ctx, primary, secondary)
-				|| tagged_select_subtype(ctx, primary, secondary, true))
-				&& !tagged_subset_compat(ctx, secondary, primary))) {
-			char *typename1 = gen_typename(secondary);
-			char *typename2 = gen_typename(primary);
-			error(ctx, aexpr->cast.type->loc, expr,
-				"Type %s is not a valid member of tagged union type %s",
-				typename1, typename2);
-			free(typename1);
-			free(typename2);
+		if (!check_match_case(&mctx, secondary, expr, aexpr->cast.type->loc)) {
 			return;
 		}
 		break;
@@ -2424,56 +2521,6 @@ check_expr_if(struct context *ctx,
 	expr->_if.false_branch = false_branch;
 }
 
-static const char *
-check_match_case_nullable_ptr(struct context *ctx,
-	const struct type *ctype,
-	const struct type *ref_type)
-{
-	// match (e: nullable *ref_type) {
-	// case ctype =>
-	// Null has already been handled.
-	if (ctype->storage != STORAGE_POINTER) {
-		return "Match on nullable pointer: case is not null or pointer type";
-	} else if (ref_type != type_dealias(ctx, ctype->pointer.referent)) {
-		return "Match on nullable pointer: case has invalid pointer type";
-	}
-	return NULL;
-}
-
-static const char *
-check_match_case_tagged(struct context *ctx,
-	const struct type *ctype,
-	const struct type *type)
-{
-	// match (e: type) {
-	// case ctype =>
-	// TODO: Assign a score to tagged compatibility
-	// and choose the branch with the highest score.
-	if (!type_is_assignable(ctx, type, ctype)) {
-		return "Match on tagged union: case is not assignable to match type";
-	}
-	return NULL;
-}
-
-static const char *
-check_match_case_tagged_ptr(struct context *ctx,
-	const struct type *ctype,
-	const struct type *ref_type)
-{
-	// match (e: *ref_type) {
-	// case ctype =>
-	if (ctype->size == 0) {
-		if (!type_is_assignable(ctx, ref_type, ctype)) {
-			return "Match on pointer to tagged union: zero-sized case type is not assignable to match type";
-		}
-	} else if (ctype->storage != STORAGE_POINTER) {
-		return "Match on pointer to tagged union: finite-sized case type is not a pointer";
-	} else if (!type_is_assignable(ctx, ref_type, ctype->pointer.referent)) {
-		return "Match on pointer to tagged union: case is not assignable to match type";
-	}
-	return NULL;
-}
-
 static void
 check_expr_match(struct context *ctx,
 	const struct ast_expression *aexpr,
@@ -2486,27 +2533,8 @@ check_expr_match(struct context *ctx,
 	check_expression(ctx, aexpr->match.value, value, NULL);
 	expr->match.value = value;
 
-	const struct type *type = type_dealias(ctx, value->result);
-	if (type->storage == STORAGE_INVALID) {
-		mkerror(expr);
-		return;
-	}
-	bool is_tagged = type->storage == STORAGE_TAGGED;
-	bool is_nullable_ptr = false, is_tagged_ptr = false;
-	const struct type *ref_type = NULL;
-	if (type->storage == STORAGE_POINTER) {
-		is_nullable_ptr = type->pointer.nullable;
-		ref_type = type_dealias(ctx, type->pointer.referent);
-		if (ref_type->storage == STORAGE_INVALID) {
-			mkerror(expr);
-			return;
-		}
-		is_tagged_ptr = ref_type->storage == STORAGE_TAGGED;
-
-	}
-	if (!is_tagged && !is_nullable_ptr && !is_tagged_ptr) {
-		error(ctx, aexpr->match.value->loc, expr,
-			"Match value is not tagged union, pointer to tagged union, or nullable pointer type");
+	struct match_context mctx = {0};
+	if (!begin_check_match(ctx, &mctx, expr, value->result, aexpr->match.value->loc)) {
 		return;
 	}
 
@@ -2521,22 +2549,7 @@ check_expr_match(struct context *ctx,
 		const struct type *ctype = NULL;
 		if (acase->type) {
 			ctype = type_store_lookup_atype(ctx, acase->type);
-			const char *err_msg = NULL;
-			if (ctype->storage == STORAGE_NULL && is_nullable_ptr) {
-				// Ok in all cases.
-			} else if (is_nullable_ptr && !is_tagged_ptr) {
-				err_msg = check_match_case_nullable_ptr(ctx,
-					ctype, ref_type);
-			} else if (is_tagged_ptr) {
-				err_msg = check_match_case_tagged_ptr(ctx,
-					ctype, ref_type);
-			} else {
-				assert(is_tagged);
-				err_msg = check_match_case_tagged(ctx,
-					ctype, type);
-			}
-			if (err_msg) {
-				error(ctx, acase->type->loc, expr, "%s", err_msg);
+			if (!check_match_case(&mctx, ctype, expr, acase->type->loc)) {
 				return;
 			}
 		}
