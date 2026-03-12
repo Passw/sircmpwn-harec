@@ -56,6 +56,7 @@ store_for_type(struct gen_context *ctx, const struct type *type)
 		break;
 	case STORAGE_POINTER:
 	case STORAGE_UINTPTR:
+	case STORAGE_NULL:
 		switch (ctx->arch.ptr->stype) {
 		case Q_LONG:
 			return Q_STOREL;
@@ -76,7 +77,6 @@ store_for_type(struct gen_context *ctx, const struct type *type)
 	case STORAGE_ICONST:
 	case STORAGE_NEVER:
 	case STORAGE_NOMEM:
-	case STORAGE_NULL:
 	case STORAGE_OPAQUE:
 	case STORAGE_SLICE:
 	case STORAGE_STRING:

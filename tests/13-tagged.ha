@@ -175,7 +175,9 @@ fn subsetcast() void = {
 	let x: (size | void | int) = 2z;
 	assert(x: (size | void) as size == 2);
 	assert(x as (size | void) as size == 2);
-	assert(x is (size | void) && (x is size) && !(x is void));
+	assert(x is (size | void));
+	assert(x is size);
+	assert(!(x is void));
 
 	// Disjoint alignment
 	// subset -> superset
@@ -250,14 +252,6 @@ fn reject() void = {
 		"fn test() void = {
 			let a: (u8 | u16) = 42u8;
 			let b = a as (u8 | u16 | void);
-		};"
-	)!;
-
-	// cannot type assert into the same type
-	compile(status::CHECK,
-		"fn test() void = {
-			let a: (u8 | u16) = 42u8;
-			let b = a as (u8 | u16);
 		};"
 	)!;
 

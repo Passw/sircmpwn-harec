@@ -292,7 +292,7 @@ fn transitivity() void = {
 		abort();
 	};
 	assert(visit);
-	
+
 	let z: (bint | void) = 10;
 	match (z) {
 	case aint =>
