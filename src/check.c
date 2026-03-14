@@ -2156,7 +2156,10 @@ check_expr_for_each(struct context *ctx,
 		}
 		break;
 	case FOR_EACH_ITERATOR:
-		if (initializer_type->storage != STORAGE_TAGGED) {
+		if (initializer_type->storage == STORAGE_ERROR) {
+			initializer_result = &builtin_type_invalid;
+			break;
+		} else if (initializer_type->storage != STORAGE_TAGGED) {
 			error(ctx, abinding->initializer->loc, initializer,
 				"Expected tagged union");
 			return;
