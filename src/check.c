@@ -209,6 +209,7 @@ check_expr_access(struct context *ctx,
 		case O_CONST:
 			// Lower flexible types
 			*expr = *obj->value;
+			expr->loc = aexpr->loc;
 			flexible_reset_refs(expr->result);
 			break;
 		case O_BIND:
