@@ -130,6 +130,7 @@ fn binding() void = {
 
 type a = enum { A, B, C };
 type b = enum { A, B, C = B };
+type c = enum { A, B = A, C = A };
 
 fn exhaustivity() void = {
 	switch (true) {
@@ -153,6 +154,10 @@ fn exhaustivity() void = {
 	switch (b::C) {
 	case b::A => abort();
 	case b::B => void;
+	};
+
+	switch (c::A) {
+	case c::A => void;
 	};
 
 	let buf: [4096]u8 = [0...];

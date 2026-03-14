@@ -3238,7 +3238,7 @@ num_cases(struct context *ctx, const struct type *type)
 			cases_array[i] = o->value;
 		}
 		qsort(cases_array, n, sizeof(struct expression *), &casecmp);
-		for (size_t i = 1; i < n; ++i) {
+		for (size_t i = 1, sz = n; i < sz; ++i) {
 			if (casecmp(&cases_array[i - 1], &cases_array[i]) == 0) {
 				--n;
 			}
