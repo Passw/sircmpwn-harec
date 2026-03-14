@@ -500,9 +500,9 @@ want_int:
 	uint64_t exponent = 0;
 	errno = 0;
 	if (exp != 0) {
-		exponent = strtoumax(lexer->buf + exp + 1, NULL, 10);
+		exponent = strtoull(lexer->buf + exp + 1, NULL, 10);
 	}
-	out->uval = strtoumax(lexer->buf + (base == 10 ? 0 : 2), NULL, base);
+	out->uval = strtoull(lexer->buf + (base == 10 ? 0 : 2), NULL, base);
 	out->uval = compute_exp(out->uval, exponent, kind == SIGNED);
 	if (errno == ERANGE) {
 		error(out->loc, "Integer literal overflow");
