@@ -439,11 +439,7 @@ tagged_init(struct context *ctx, struct type *type,
 			error(ctx, loc, NULL, "Hash collision between %s and %s",
 				first_name, second_name);
 		}
-		if (membs[i]->storage == STORAGE_NULL && valid) {
-			error(ctx, loc, NULL,
-				"Null type not allowed in this context");
-			invalid = true;
-		}
+		assert(membs[i]->storage != STORAGE_NULL);
 		if (membs[i]->size == SIZE_UNDEFINED && valid) {
 			error(ctx, loc, NULL,
 				"Type of undefined size is not a valid tagged union member");
@@ -945,7 +941,7 @@ type_store_lookup_pointer(struct context *ctx, struct location loc,
 		return &builtin_type_invalid;
 	}
 	if (referent->storage == STORAGE_NULL) {
-		error(ctx, loc, NULL, "Null type not allowed in this context");
+		error(ctx, loc, NULL, "Can't have pointer to bare null");
 		return &builtin_type_invalid;
 	}
 	if (referent->size == 0) {
@@ -978,7 +974,7 @@ type_store_lookup_array(struct context *ctx, struct location loc,
 		return &builtin_type_invalid;
 	}
 	if (members->storage == STORAGE_NULL) {
-		error(ctx, loc, NULL, "Null type not allowed in this context");
+		error(ctx, loc, NULL, "Bare null is not a valid array member");
 		return &builtin_type_invalid;
 	}
 	members = lower_flexible(ctx, members, NULL);
@@ -1017,10 +1013,7 @@ type_store_lookup_slice(struct context *ctx, struct location loc,
 	if (members->storage == STORAGE_INVALID) {
 		return &builtin_type_invalid;
 	}
-	if (members->storage == STORAGE_NULL) {
-		error(ctx, loc, NULL, "Null type not allowed in this context");
-		return &builtin_type_invalid;
-	}
+	assert(members->storage != STORAGE_NULL);
 	members = lower_flexible(ctx, members, NULL);
 	if (members->size == 0) {
 		error(ctx, loc, NULL,
@@ -1094,8 +1087,7 @@ type_store_lookup_tuple(struct context *ctx, struct location loc,
 			return &builtin_type_invalid;
 		}
 		if (t->type->storage == STORAGE_NULL) {
-			error(ctx, loc, NULL,
-				"Null type not allowed in this context");
+			error(ctx, loc, NULL, "Bare null is not a valid tuple member");
 			return &builtin_type_invalid;
 		}
 		t->type = lower_flexible(ctx, t->type, NULL);
