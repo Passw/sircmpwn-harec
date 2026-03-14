@@ -17,9 +17,7 @@ fn allocation() void = {
 	free(x);
 
 	let y: (*int | nomem) = alloc(1234);
-	if (!(y is nomem)) {
-		assert(*(y as *int) == 1234);
-	};
+	assert(*(y as *int) == 1234);
 	free(y as *int);
 
 	let z: my_struct_ptr = alloc(my_struct {
