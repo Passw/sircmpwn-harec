@@ -101,7 +101,7 @@ itrunc(struct context *ctx, const struct type *type, uint64_t val)
 	case STORAGE_UINTPTR:
 		return val;
 	case STORAGE_NULL:
-		return (uintptr_t)NULL;
+		return 0;
 	case STORAGE_ERROR:
 	case STORAGE_ALIAS:
 		return itrunc(ctx, type_dealias(ctx, type), val);
