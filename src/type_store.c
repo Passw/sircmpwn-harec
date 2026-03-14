@@ -439,7 +439,7 @@ tagged_init(struct context *ctx, struct type *type,
 			error(ctx, loc, NULL, "Hash collision between %s and %s",
 				first_name, second_name);
 		}
-		assert(membs[i]->storage != STORAGE_NULL);
+		assert(membs[i]->storage != STORAGE_NULL || !valid);
 		if (membs[i]->size == SIZE_UNDEFINED && valid) {
 			error(ctx, loc, NULL,
 				"Type of undefined size is not a valid tagged union member");
