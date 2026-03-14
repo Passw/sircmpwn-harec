@@ -68,7 +68,6 @@ fn basics() void = {
 	")!;
 
 	compile(status::CHECK, "
-		let x = 0;
 		fn test() void = switch (null) { case => void; };
 	")!;
 
