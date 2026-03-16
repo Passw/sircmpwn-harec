@@ -169,6 +169,10 @@ fn slice_copy() void = {
 	for (let i = 0z; i < len(x); i += 1) {
 		assert(x[i] == r[i]);
 	};
+
+	compile(status::CHECK, "fn f() []int = alloc([0...]...)!;")!;
+	compile(status::CHECK, "let x: [*]int; fn f() []int = alloc(x...)!;")!;
+	compile(status::CHECK, "fn f() []int = alloc((null: *struct { x: [*]int }).x...)!;")!;
 };
 
 fn string() void = {

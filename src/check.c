@@ -504,6 +504,16 @@ check_expr_alloc_copy(struct context *ctx,
 			type_storage_unparse(result->storage));
 		return;
 	}
+	if (result->storage == STORAGE_ARRAY) {
+		if (result->array.expandable) {
+			error(ctx, aexpr->alloc.init->loc, NULL,
+				"Slice initializer can't be an expandable array");
+		} else if (result->array.length == SIZE_UNDEFINED) {
+			error(ctx, aexpr->alloc.init->loc, NULL,
+				"Slice initializer can't be an unbounded array");
+		}
+		// can recover from error
+	}
 
 	result = type_dealias(ctx, expr->alloc.init->result);
 	expr->alloc.allocation_result = type_store_lookup_slice(ctx,
