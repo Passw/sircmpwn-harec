@@ -518,16 +518,16 @@ type siginfo = union {
 			},
 		},
 	},
-	_si_pad: [SI_MAX_SIZE]u8,
+	_: [SI_MAX_SIZE]u8,
 };
 
 fn rt_siginfo() void = {
 	let si = siginfo { ... };
-	assert(offset(si.si_signo) == 0);
-	assert(offset(si.si_errno) == 4);
-	assert(offset(si.si_code) == 12);
-	assert(offset(si.si_pid) == 16);
-	assert(offset(si.si_uid) == 20);
+	static assert(offset(si.si_signo) == 0);
+	static assert(offset(si.si_errno) == 4);
+	static assert(offset(si.si_code) == 8);
+	static assert(offset(si.si_pid) == 16);
+	static assert(offset(si.si_uid) == 20);
 };
 
 export type embedded_underscores = struct {
@@ -547,5 +547,6 @@ export fn main() void = {
 	invariants();
 	fields();
 	eval();
+	rt_siginfo();
 	// TODO: more union tests
 };
