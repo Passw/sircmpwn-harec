@@ -2157,7 +2157,7 @@ check_expr_for_each(struct context *ctx,
 		}
 		break;
 	case FOR_EACH_ITERATOR:
-		if (initializer_type->storage == STORAGE_ERROR) {
+		if (initializer_type->storage == STORAGE_INVALID) {
 			initializer_result = &builtin_type_invalid;
 			break;
 		} else if (initializer_type->storage != STORAGE_TAGGED) {
