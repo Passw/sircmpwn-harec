@@ -542,7 +542,9 @@ eval_type_assertion(struct context *ctx, const struct expression *restrict in,
 	}
 
 	const struct type *from = type_dealias(ctx, in->cast.value->result);
-	assert(from->storage == STORAGE_TAGGED);
+	if (from->storage != STORAGE_TAGGED) {
+		return false;
+	}
 	if (val.literal.tagged.tag == in->cast.secondary) {
 		out->literal = val.literal.tagged.value->literal;
 		return true;
@@ -562,7 +564,9 @@ eval_type_test(struct context *ctx, const struct expression *restrict in,
 	}
 
 	const struct type *from = type_dealias(ctx, in->cast.value->result);
-	assert(from->storage == STORAGE_TAGGED);
+	if (from->storage != STORAGE_TAGGED) {
+		return false;
+	}
 
 	out->literal.bval = val.literal.tagged.tag == in->cast.secondary;
 

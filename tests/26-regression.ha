@@ -272,4 +272,7 @@ export fn main() void = {
 	assert(offset(ty.1) == 16);
 
 	compile(status::CHECK, "fn x() void = { match (void: (int | void)) { case int => yield null; case void => void; }; };")!;
+
+	compile(status::CHECK, "let x = null: nullable *int as *int;")!;
+	compile(status::CHECK, "let x = null: nullable *int is null;")!;
 };
