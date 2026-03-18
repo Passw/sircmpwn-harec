@@ -315,9 +315,14 @@ struct_init_from_atype(struct context *ctx, struct type *type,
 	struct struct_field **next = &type->struct_union.fields;
 	for (const struct ast_struct_union_field *afield = &atype->struct_union.fields;
 			afield; afield = afield->next) {
+		size_t offset = type->size;
 		struct struct_field *field =
 			struct_new_field(ctx, type, afield, size_only);
 		if (field == NULL) {
+			return false;
+		}
+		if (type->size < offset) {
+			error(ctx, atype->loc, NULL, "Type is too big");
 			return false;
 		}
 		if (size_only) {
@@ -456,14 +461,26 @@ tagged_init(struct context *ctx, struct type *type,
 		*type = builtin_type_invalid;
 		return;
 	}
+	if (type->tagged.len == 0) {
+		return;
+	}
 
 	struct dimensions dims = {0};
-	size_with_tag(&dims, dim_from_type(&builtin_type_void));
+	size_t maxsize = 0;
 	for (size_t i = 0; i < type->tagged.len; i++) {
+		if (membs[i]->size != SIZE_UNDEFINED && membs[i]->size > maxsize) {
+			maxsize = membs[i]->size;
+		}
 		size_with_tag(&dims, dim_from_type(membs[i]));
 	}
+
 	type->size = dims.size;
 	type->align = dims.align;
+	add_padding(&type->size, type->align);
+	if (dims.size <= maxsize || type->size < dims.size) {
+		error(ctx, loc, NULL, "Type is too big");
+		*type = builtin_type_invalid;
+	}
 }
 
 static void
@@ -501,6 +518,9 @@ tagged_init_from_atype(struct context *ctx,
 		}
 	}
 	tagged_init(ctx, type, atype->loc, true);
+	if (type->storage == STORAGE_INVALID) {
+		return;
+	}
 
 	if (type->tagged.len <= 1) {
 		error(ctx, atype->loc, NULL,
@@ -539,6 +559,13 @@ tuple_init_from_atype(struct context *ctx,
 		size_t offset = dim.size;
 		if (memb.align != 0) {
 			add_padding(&offset, memb.align);
+		}
+		if (offset < dim.size || offset + memb.size < offset) {
+			error(ctx, atype->loc, NULL, "Type is too big");
+			if (type) {
+				*type = builtin_type_invalid;
+			}
+			return (struct dimensions){0};
 		}
 		dim.size = offset + memb.size;
 		if (dim.align < memb.align) {
@@ -747,6 +774,13 @@ type_init_from_atype(struct context *ctx,
 			type->size = SIZE_UNDEFINED;
 		} else {
 			type->size = memb.size * type->array.length;
+			if (type->array.length != 0
+					&& (type->size < memb.size
+					|| type->size < type->array.length)) {
+				error(ctx, atype->loc, NULL, "Type is too big");
+				*type = builtin_type_invalid;
+				return (struct dimensions){0};
+			}
 		}
 		break;
 	case STORAGE_FUNCTION:
@@ -850,7 +884,13 @@ type_init_from_atype(struct context *ctx,
 			return (struct dimensions){0};
 		}
 		if (type->storage == STORAGE_UNION || !type->struct_union.packed) {
+			size_t oldsize = type->size;
 			add_padding(&type->size, type->align);
+			if (type->size < oldsize) {
+				error(ctx, atype->loc, NULL, "Type is too big");
+				*type = builtin_type_invalid;
+				return (struct dimensions){0};
+			}
 		}
 		break;
 	case STORAGE_TAGGED:
@@ -862,7 +902,6 @@ type_init_from_atype(struct context *ctx,
 		} else {
 			tagged_init_from_atype(ctx, type, atype);
 		}
-		add_padding(&type->size, type->align);
 		break;
 	case STORAGE_TUPLE:
 		if (size_only) {
@@ -873,7 +912,13 @@ type_init_from_atype(struct context *ctx,
 		} else {
 			tuple_init_from_atype(ctx, type, atype);
 		}
+		size_t oldsize = type->size;
 		add_padding(&type->size, type->align);
+		if (type->size < oldsize) {
+			error(ctx, atype->loc, NULL, "Type is too big");
+			*type = builtin_type_invalid;
+			return (struct dimensions){0};
+		}
 		break;
 	}
 	return dim_from_type(type);
@@ -992,6 +1037,14 @@ type_store_lookup_array(struct context *ctx, struct location loc,
 	assert(members->align != 0);
 	assert(members->align != ALIGN_UNDEFINED);
 
+	size_t size = len == SIZE_UNDEFINED
+		? SIZE_UNDEFINED : members->size * len;
+	if (len != 0 && len != SIZE_UNDEFINED
+			&& (size < members->size || size < len)) {
+		error(ctx, loc, NULL, "Type is too big");
+		return &builtin_type_invalid;
+	}
+
 	struct type array = {
 		.storage = STORAGE_ARRAY,
 		.array = {
@@ -1000,8 +1053,7 @@ type_store_lookup_array(struct context *ctx, struct location loc,
 			// TODO: Define expandable semantics better in spec
 			.expandable = expandable,
 		},
-		.size = len == SIZE_UNDEFINED
-			? SIZE_UNDEFINED : members->size * len,
+		.size = size,
 		.align = members->align,
 	};
 	return type_store_lookup_type(ctx, &array);
@@ -1106,10 +1158,20 @@ type_store_lookup_tuple(struct context *ctx, struct location loc,
 		if (t->type->align != 0) {
 			add_padding(&t->offset, t->type->align);
 		}
+		if (t->offset < type.size || t->offset + t->type->size < t->offset) {
+			error(ctx, loc, NULL, "Type is too big");
+			return &builtin_type_invalid;
+		}
 		type.size = t->offset + t->type->size;
 	}
 	type.tuple = *values;
+
+	size_t oldsize = type.size;
 	add_padding(&type.size, type.align);
+	if (type.size < oldsize) {
+		error(ctx, loc, NULL, "Type is too big");
+		return &builtin_type_invalid;
+	}
 	return type_store_lookup_type(ctx, &type);
 }
 

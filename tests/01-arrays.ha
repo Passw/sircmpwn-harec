@@ -183,6 +183,13 @@ fn reject() void = {
 	compile(status::CHECK, "fn f() void = { let x = [1, 2, 3]: [*]int; };")!;
 	compile(status::CHECK, "fn f() void = { let x = [1...]: [*]int; };")!;
 	compile(status::CHECK, "fn f() void = { ([]: [*]int)[0]; };")!;
+
+	// size overflows
+	compile(status::CHECK, "type t = [~0z / 2 + 1]u16;")!;
+	compile(status::CHECK, "type t = [2][~0z / 2]u16;")!;
+	compile(status::CHECK, "def X = size([types::SIZE_MAX / 2 + 1]u16);")!;
+	compile(status::CHECK, "def X = size([2][types::SIZE_MAX / 2]u16);")!;
+	compile(status::CHECK, "fn f(x: [~0z / 2]u16) void = _ = [x, x];")!;
 };
 
 export fn main() void = {

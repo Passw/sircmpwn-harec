@@ -279,6 +279,9 @@ fn autofill() void = {
 	let au = autofill_union { i = 5 };
 };
 
+// note: this errors out if it's a struct; see invariant test below
+type beeg = union { _: [~0z / 2]u16, _: u16 };
+
 fn invariants() void = {
 	// embedding a non-alias type
 	compile(status::PARSE, "type t = struct { u8, x: int };")!;
@@ -372,6 +375,29 @@ fn invariants() void = {
 	"type foo = struct { x: int, y: bar };"
 	"type bar = enum { A = 1, B, C = -1 };"
 	"fn test() void = { let x = foo { x = 0, ... }; };",
+
+	// Size overflows
+	"type foo = struct { _: [~0z / 2]u16, _: u16 };",
+	"type foo = struct { _: [~0z / 2]u16, _: u32 };",
+	"type foo = struct { _: u16, _: [~0z / 2]u16 };",
+	"type foo = struct { _: u32, _: [~0z / 2]u16 };",
+	"type foo = struct { _: [~0z / 2]u16, _: [0]u32 };",
+	"type foo = union { _: [~0z / 2]u16, _: u32 };",
+	"type foo = union { _: u32, _: [~0z / 2]u16 };",
+	"type foo = union { _: [~0z / 2]u16, _: [0]u32 };",
+	"def FOO = size(struct { _: [~0z / 2]u16, _: u16 });",
+	"def FOO = size(struct { _: [~0z / 2]u16, _: u32 });",
+	"def FOO = size(struct { _: u16, _: [~0z / 2]u16 });",
+	"def FOO = size(struct { _: u32, _: [~0z / 2]u16 });",
+	"def FOO = size(struct { _: [~0z / 2]u16, _: [0]u32 });",
+	"def FOO = size(union { _: [~0z / 2]u16, _: u32 });",
+	"def FOO = size(union { _: u32, _: [~0z / 2]u16 });",
+	"def FOO = size(union { _: [~0z / 2]u16, _: [0]u32 });",
+	"let foo = struct { x: [~0z / 2]u16 = @undefined, y: u16 = 0 };",
+	"let foo = struct { x: [~0z / 2]u16 = @undefined, y: u32 = 0 };",
+	"let foo = struct { x: u16 = 0, y: [~0z / 2]u16 = @undefined };",
+	"let foo = struct { x: u32 = 0, y: [~0z / 2]u16 = @undefined };",
+	"let foo = struct { x: [~0z / 2]u16 = @undefined, y: [0]u32 = [] };",
 	];
 	for (let i = 0z; i < len(failures); i += 1) {
 		compile(status::CHECK, failures[i])!;

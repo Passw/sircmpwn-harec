@@ -285,6 +285,20 @@ fn reject() void = {
 			x += 5: (int | void);
 		};"
 	)!;
+
+	// size overflows
+	compile(status::CHECK, "type t = ([~0z - 1]u8 | void);")!;
+	compile(status::CHECK, "type t = ([~0z - 3]u8 | void);")!;
+	compile(status::CHECK, "type t = ([~0z / 8]u64 | void);")!;
+	compile(status::CHECK, "type t = ([~0z / 4 - 1]u32 | u64);")!;
+	compile(status::CHECK, "def X = size(([~0z - 1]u8 | void));")!;
+	compile(status::CHECK, "def X = size(([~0z - 3]u8 | void));")!;
+	compile(status::CHECK, "def X = size(([~0z / 8]u64 | void));")!;
+	compile(status::CHECK, "def X = size(([~0z / 4 - 1]u32 | u64));")!;
+	compile(status::CHECK, "fn f() void = _ = if (true) [0...]: [~0z - 1]u8;")!;
+	compile(status::CHECK, "fn f() void = _ = if (true) [0...]: [~0z - 3]u8;")!;
+	compile(status::CHECK, "fn f() void = _ = if (true) [0...]: [~0z / 8]u64;")!;
+	compile(status::CHECK, "fn f() void = _ = if (true) [0...]: [~0z / 4 - 1]u32 else 0u64;")!;
 };
 
 def val1: integer = 8u8;

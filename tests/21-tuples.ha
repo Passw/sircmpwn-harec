@@ -231,6 +231,26 @@ fn reject() void = {
 		// arithmetic on tuples
 		"fn t() void = { let a = (0, 1) + (2, 3); };",
 		"fn t() void = { let a = (0, 1); a += (2, 3); };",
+
+		// size overflows
+		"type t = ([~0z / 2]u16, u16);",
+		"type t = ([~0z / 2]u16, u32);",
+		"type t = (u16, [~0z / 2]u16);",
+		"type t = (u32, [~0z / 2]u16);",
+		"type t = ([~0z / 2]u16, [0]u32);",
+		"type t = ([0]u32, [~0z / 2]u16);",
+		"def X = size(([~0z / 2]u16, u16));",
+		"def X = size(([~0z / 2]u16, u32));",
+		"def X = size((u16, [~0z / 2]u16));",
+		"def X = size((u32, [~0z / 2]u16));",
+		"def X = size(([~0z / 2]u16, [0]u32));",
+		"def X = size(([0]u32, [~0z / 2]u16));",
+		"fn f() void = _ = (*(null: *[~0z / 2]u16), 67u16);",
+		"fn f() void = _ = (*(null: *[~0z / 2]u16), 67u32);",
+		"fn f() void = _ = (67u16, *(null: *[~0z / 2]u16));",
+		"fn f() void = _ = (67u32, *(null: *[~0z / 2]u16));",
+		"fn f() void = _ = (*(null: *[~0z / 2]u16), []: [0]u32);",
+		"fn f() void = _ = ([]: [0]u32, *(null: *[~0z / 2]u16));",
 	];
 
 	for (let i = 0z; i < len(parse); i += 1) {
