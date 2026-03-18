@@ -388,9 +388,11 @@ tagged_size(struct context *ctx, const struct ast_tagged_union_type *atype)
 		unwrapped = type_dealias(ctx, unwrapped);
 		if (unwrapped->storage != STORAGE_TAGGED) {
 			if (unwrapped->storage != STORAGE_INVALID) {
+				char *typename = gen_typename(unwrapped);
 				error(ctx, atype->type->loc, NULL,
 					"Can't reduce non-tagged-union type %s",
-					gen_typename(unwrapped));
+					typename);
+				free(typename);
 			}
 			return ret;
 		}
@@ -439,6 +441,8 @@ tagged_init(struct context *ctx, struct type *type,
 			error(ctx, loc, NULL,
 				"Tagged union can't contain both %s and %s (hash collision)",
 				first_name, second_name);
+			free(first_name);
+			free(second_name);
 		}
 		assert(membs[i]->storage != STORAGE_NULL || !valid);
 		if (membs[i]->size == SIZE_UNDEFINED && valid) {
@@ -486,9 +490,11 @@ tagged_init_from_atype(struct context *ctx,
 		memb = type_dealias(ctx, memb);
 		if (memb->storage != STORAGE_TAGGED) {
 			if (memb->storage != STORAGE_INVALID) {
+				char *typename = gen_typename(memb);
 				error(ctx, atype->loc, NULL,
 					"Can't reduce non-tagged-union type %s",
-					gen_typename(memb));
+					typename);
+				free(typename);
 			}
 			*type = builtin_type_invalid;
 			return;
