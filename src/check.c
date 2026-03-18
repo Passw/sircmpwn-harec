@@ -4301,6 +4301,12 @@ resolve_global(struct context *ctx, struct scope_object *obj)
 	struct expression *init, *value = NULL;
 	if (decl->type) {
 		type = type_store_lookup_atype(ctx, decl->type);
+		if (type->storage == STORAGE_NEVER) {
+			error(ctx, decl->type->loc, NULL,
+				"Global cannot have type never");
+			type = &builtin_type_invalid;
+			goto end;
+		}
 		context = decl->type->storage == STORAGE_ARRAY
 			&& decl->type->array.contextual;
 		if (context && !decl->init) {
@@ -4335,13 +4341,18 @@ resolve_global(struct context *ctx, struct scope_object *obj)
 		} else {
 			init = lower_implicit_cast(ctx, type, init);
 		}
+		if (type->storage == STORAGE_NEVER) {
+			error(ctx, obj->idecl->decl.loc, NULL,
+				"Global cannot have type never");
+			type = &builtin_type_invalid;
+			goto end;
+		}
 		if (type->size == SIZE_UNDEFINED) {
 			error(ctx, decl->init->loc, NULL,
 				"Cannot initialize object with undefined size");
 			type = &builtin_type_invalid;
 			goto end;
 		}
-		assert(type->size != SIZE_UNDEFINED);
 		if (type->storage == STORAGE_NULL) {
 			error(ctx, decl->init->loc, NULL,
 				"Can't initialize global as null without explicit type hint");

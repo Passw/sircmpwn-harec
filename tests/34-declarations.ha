@@ -474,6 +474,14 @@ fn reject() void = {
 
 		// type alias of never
 		"export type t = never;",
+
+		// global with type never
+		"let x: never;",
+		"let x: never; fn f() never = x;",
+		"let x: never; fn f() int = { x; };",
+		"let x = abort();",
+		"let x = abort(); fn f() never = x;",
+		"let x = abort(); fn f() int = { x; };",
 	];
 
 	for (let i = 0z; i < len(failures); i += 1) {
