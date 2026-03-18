@@ -146,6 +146,14 @@ struct_union_has_field(struct context *ctx,
 	return false;
 }
 
+static void
+add_padding(size_t *size, size_t align)
+{
+	if (*size != SIZE_UNDEFINED && *size != 0 && *size % align != 0) {
+		*size += align - *size % align;
+	}
+}
+
 static struct struct_field *
 struct_new_field(struct context *ctx, struct type *type,
 	const struct ast_struct_union_field *afield, bool size_only)
@@ -199,9 +207,8 @@ struct_new_field(struct context *ctx, struct type *type,
 		field->offset = type->size;
 	} else {
 		field->offset = type->size;
-		if (dim.align != 0 && field->offset % dim.align != 0) {
-			field->offset += dim.align - (field->offset % dim.align);
-			assert(field->offset % dim.align == 0);
+		if (dim.align != 0) {
+			add_padding(&field->offset, dim.align);
 		}
 	}
 
@@ -333,14 +340,6 @@ struct_init_from_atype(struct context *ctx, struct type *type,
 		next = &field->next;
 	}
 	return true;
-}
-
-static void
-add_padding(size_t *size, size_t align)
-{
-	if (*size != SIZE_UNDEFINED && *size != 0 && *size % align != 0) {
-		*size += align - *size % align;
-	}
 }
 
 static void
@@ -539,11 +538,9 @@ tuple_init_from_atype(struct context *ctx,
 		}
 		size_t offset = dim.size;
 		if (memb.align != 0) {
-			if (dim.size % memb.align) {
-				offset += memb.align - dim.size % memb.align;
-			}
-			dim.size = offset + memb.size;
+			add_padding(&offset, memb.align);
 		}
+		dim.size = offset + memb.size;
 		if (dim.align < memb.align) {
 			dim.align = memb.align;
 		}
@@ -1107,11 +1104,9 @@ type_store_lookup_tuple(struct context *ctx, struct location loc,
 		}
 		t->offset = type.size;
 		if (t->type->align != 0) {
-			if (type.size % t->type->align != 0) {
-				t->offset += t->type->align - type.size % t->type->align;
-			}
-			type.size = t->offset + t->type->size;
+			add_padding(&t->offset, t->type->align);
 		}
+		type.size = t->offset + t->type->size;
 	}
 	type.tuple = *values;
 	add_padding(&type.size, type.align);
