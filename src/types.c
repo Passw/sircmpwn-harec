@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "arch.h"
 #include "check.h"
 #include "expr.h"
 #include "scope.h"
@@ -1294,9 +1295,10 @@ type_is_castable(struct context *ctx, const struct type *to, const struct type *
 }
 
 void
-builtin_types_init(const char *target)
+builtin_types_init(enum arch target)
 {
-	if (strcmp(target, "aarch64") == 0) {
+	switch (target) {
+	case AARCH64:
 		builtin_type_f64.align = 8;
 		builtin_type_int.size = 4;
 		builtin_type_int.align = 4;
@@ -1314,7 +1316,8 @@ builtin_types_init(const char *target)
 		builtin_type_str.align = 8;
 		builtin_type_valist.size = 32;
 		builtin_type_valist.align = 8;
-	} else if (strcmp(target, "riscv64") == 0) {
+		break;
+	case PPC64LE:
 		builtin_type_f64.align = 8;
 		builtin_type_int.size = 4;
 		builtin_type_int.align = 4;
@@ -1332,7 +1335,27 @@ builtin_types_init(const char *target)
 		builtin_type_str.align = 8;
 		builtin_type_valist.size = 8;
 		builtin_type_valist.align = 8;
-	} else if (strcmp(target, "x86_64") == 0) {
+		break;
+	case RISCV64:
+		builtin_type_f64.align = 8;
+		builtin_type_int.size = 4;
+		builtin_type_int.align = 4;
+		builtin_type_uint.size = 4;
+		builtin_type_uint.align = 4;
+		builtin_type_uintptr.size = 8;
+		builtin_type_uintptr.align = 8;
+		builtin_type_i64.align = 8;
+		builtin_type_u64.align = 8;
+		builtin_type_null.size = 8;
+		builtin_type_null.align = 8;
+		builtin_type_size.size = 8;
+		builtin_type_size.align = 8;
+		builtin_type_str.size = 24;
+		builtin_type_str.align = 8;
+		builtin_type_valist.size = 8;
+		builtin_type_valist.align = 8;
+		break;
+	case X86_64:
 		builtin_type_f64.align = 8;
 		builtin_type_int.size = 4;
 		builtin_type_int.align = 4;
@@ -1350,27 +1373,7 @@ builtin_types_init(const char *target)
 		builtin_type_str.align = 8;
 		builtin_type_valist.size = 24;
 		builtin_type_valist.align = 8;
-	} else if (strcmp(target, "ppc64le") == 0) {
-		builtin_type_f64.align = 8;
-		builtin_type_int.size = 4;
-		builtin_type_int.align = 4;
-		builtin_type_uint.size = 4;
-		builtin_type_uint.align = 4;
-		builtin_type_uintptr.size = 8;
-		builtin_type_uintptr.align = 8;
-		builtin_type_i64.align = 8;
-		builtin_type_u64.align = 8;
-		builtin_type_null.size = 8;
-		builtin_type_null.align = 8;
-		builtin_type_size.size = 8;
-		builtin_type_size.align = 8;
-		builtin_type_str.size = 24;
-		builtin_type_str.align = 8;
-		builtin_type_valist.size = 8;
-		builtin_type_valist.align = 8;
-	} else {
-		xfprintf(stderr, "Unsupported or unrecognized target: %s\n", target);
-		exit(EXIT_USER);
+		break;
 	}
 	struct type *builtins[] = {
 		&builtin_type_bool, &builtin_type_invalid, &builtin_type_f32,

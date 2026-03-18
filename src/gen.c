@@ -1,6 +1,7 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
+#include "arch.h"
 #include "check.h"
 #include "expr.h"
 #include "gen.h"
@@ -3988,17 +3989,40 @@ gen_decl(struct gen_context *ctx, const struct declaration *decl)
 	}
 }
 
+static struct gen_arch
+gen_arch_init(enum arch arch)
+{
+	struct gen_arch ret = {0};
+	switch (arch) {
+	case AARCH64:
+		ret.ptr = &qbe_long;
+		ret.sz = &qbe_long;
+		break;
+	case PPC64LE:
+		ret.ptr = &qbe_long;
+		ret.sz = &qbe_long;
+		break;
+	case RISCV64:
+		ret.ptr = &qbe_long;
+		ret.sz = &qbe_long;
+		break;
+	case X86_64:
+		ret.ptr = &qbe_long;
+		ret.sz = &qbe_long;
+		break;
+	}
+
+	return ret;
+}
+
 void
-gen(const struct unit *unit, struct qbe_program *out, struct intern_table *itbl)
+gen(const struct unit *unit, struct qbe_program *out, enum arch target, struct intern_table *itbl)
 {
 	struct gen_context ctx = {
 		.out = out,
 		.ns = unit->ns,
 		.itbl = itbl,
-		.arch = {
-			.ptr = &qbe_long,
-			.sz = &qbe_long,
-		},
+		.arch = gen_arch_init(target),
 	};
 	ctx.out->next = &ctx.out->defs;
 	rtfunc_init(&ctx);

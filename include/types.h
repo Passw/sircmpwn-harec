@@ -2,6 +2,7 @@
 #define HARE_TYPES_H
 #include <stdbool.h>
 #include <stdint.h>
+#include "arch.h"
 #include "identifier.h"
 
 enum type_storage {
@@ -192,7 +193,7 @@ const struct type *lower_flexible(struct context *ctx,
 void flexible_refer(const struct type *type, const struct type **ref);
 void flexible_reset_refs(const struct type *type);
 
-void builtin_types_init(const char *target);
+void builtin_types_init(enum arch target);
 
 // Built-in type singletons
 extern struct type

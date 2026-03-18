@@ -4,6 +4,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include "arch.h"
 #include "ast.h"
 #include "check.h"
 #include "emit.h"
@@ -77,7 +78,7 @@ int
 main(int argc, char *argv[])
 {
 	const char *output = NULL, *typedefs = NULL;
-	const char *target = DEFAULT_TARGET;
+	const char *targetstr = DEFAULT_TARGET;
 	const char *modpath = NULL;
 	bool is_test = false;
 	struct unit unit = {0};
@@ -93,7 +94,7 @@ main(int argc, char *argv[])
 	while ((c = getopt(argc, argv, "a:D:hM:m:N:o:Tt:v")) != -1) {
 		switch (c) {
 		case 'a':
-			target = optarg;
+			targetstr = optarg;
 			break;
 		case 'D':
 			*next_def = parse_define(argv[0], optarg, &itbl);
@@ -141,6 +142,21 @@ main(int argc, char *argv[])
 			usage(argv[0]);
 			return EXIT_USER;
 		}
+	}
+
+	enum arch target;
+	if (strcmp(targetstr, "aarch64") == 0) {
+		target = AARCH64;
+	} else if (strcmp(targetstr, "ppc64le") == 0) {
+		target = PPC64LE;
+	} else if (strcmp(targetstr, "riscv64") == 0) {
+		target = RISCV64;
+	} else if (strcmp(targetstr, "x86_64") == 0) {
+		target = X86_64;
+	} else {
+		xfprintf(stderr, "Unsupported or unrecognized target: %s\n",
+			targetstr);
+		return EXIT_USER;
 	}
 
 	mainsym = intern_copy(&itbl, mainsym);
@@ -219,7 +235,7 @@ main(int argc, char *argv[])
 	}
 
 	struct qbe_program prog = {0};
-	gen(&unit, &prog, &itbl);
+	gen(&unit, &prog, target, &itbl);
 
 	FILE *out;
 	if (!output) {

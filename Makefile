@@ -13,6 +13,7 @@ C_DEFINES = \
 	-DDEFAULT_TARGET='"$(DEFAULT_TARGET)"'
 
 headers = \
+	include/arch.h \
 	include/ast.h \
 	include/check.h \
 	include/emit.h \
