@@ -126,7 +126,8 @@ expr_equal(const struct expression *a, const struct expression *b)
 		// TODO Consider how to compare different NaNs.
 		assert(!isnan(a->literal.fval));
 		assert(!isnan(b->literal.fval));
-		return a->literal.fval == b->literal.fval;
+		return signbit(a->literal.fval) == signbit(b->literal.fval)
+			&& a->literal.fval == b->literal.fval;
 	case STORAGE_I8:
 	case STORAGE_I16:
 	case STORAGE_I32:

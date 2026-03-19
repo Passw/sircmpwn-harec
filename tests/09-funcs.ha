@@ -131,6 +131,10 @@ fn reject() void = {
 		// default value must be assignable to type
 		"fn f(a: str = 5) void = void;",
 
+		// positive and negative zero hash differently
+		"fn f(x: f64 = 0.0) void = void;"
+		"let x: *fn(x: f64 = -0.0) void = &f;",
+
 		// too many arguments
 		"fn f() void = f(0);",
 		"fn f(x: int) void = f(0, 1);",
@@ -225,6 +229,7 @@ fn optional_variadic_c(n: int = 0, ...) void = {
 		assert(vaarg(ap, int) == i);
 	};
 };
+type optional_zero_tu = (*fn(x: f64 = 0.0) void | *fn(x: f64 = -0.0) void);
 
 fn optional_params() void = {
 	assert(optional_simple(5, 1) == 1);
