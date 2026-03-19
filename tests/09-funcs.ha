@@ -135,6 +135,10 @@ fn reject() void = {
 		"fn f(x: f64 = 0.0) void = void;"
 		"let x: *fn(x: f64 = -0.0) void = &f;",
 
+		// all NaNs hash the same
+		"type t = (*fn(x: f64 = 0.0 / 0.0) void | *fn(x: f64 = 0.0 / 0.0) void);",
+		"type t = (*fn(x: f64 = 0.0 / 0.0) void | *fn(x: f64 = -(0.0 / 0.0)) void);",
+
 		// too many arguments
 		"fn f() void = f(0);",
 		"fn f(x: int) void = f(0, 1);",
@@ -230,6 +234,9 @@ fn optional_variadic_c(n: int = 0, ...) void = {
 	};
 };
 type optional_zero_tu = (*fn(x: f64 = 0.0) void | *fn(x: f64 = -0.0) void);
+fn optional_nan(x: f64 = 0.0 / 0.0) void = void;
+let optional_nan_p: *fn(x: f64 = 0.0 / 0.0) void = &optional_nan;
+let optional_nan_p2: *fn(x: f64 = -(0.0 / 0.0)) void = &optional_nan;
 
 fn optional_params() void = {
 	assert(optional_simple(5, 1) == 1);

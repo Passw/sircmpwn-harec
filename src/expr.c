@@ -1,4 +1,6 @@
+#include <assert.h>
 #include <math.h>
+#include <stdint.h>
 #include <string.h>
 #include "expr.h"
 #include "types.h"
@@ -30,10 +32,14 @@ expr_hash(const struct expression *expr)
 		break;
 	case STORAGE_F32:
 	case STORAGE_F64:
-	case STORAGE_FCONST:
-		// TODO Consider how to hash different NaNs.
-		assert(!isnan(expr->literal.fval));
-		hash = fnv1a_u64(hash, expr->literal.uval);
+	case STORAGE_FCONST:;
+		static_assert(sizeof(uint64_t) == sizeof(double),
+			"expected 64-bit double");
+		double fval = isnan(expr->literal.fval)
+			? NAN : expr->literal.fval;
+		uint64_t uval;
+		memcpy(&uval, &fval, sizeof(uval)); // needed to avoid UB with aliasing
+		hash = fnv1a_u64(hash, uval);
 		break;
 	case STORAGE_I8:
 	case STORAGE_I16:
@@ -123,11 +129,9 @@ expr_equal(const struct expression *a, const struct expression *b)
 	case STORAGE_F32:
 	case STORAGE_F64:
 	case STORAGE_FCONST:
-		// TODO Consider how to compare different NaNs.
-		assert(!isnan(a->literal.fval));
-		assert(!isnan(b->literal.fval));
-		return signbit(a->literal.fval) == signbit(b->literal.fval)
-			&& a->literal.fval == b->literal.fval;
+		return (signbit(a->literal.fval) == signbit(b->literal.fval)
+				&& a->literal.fval == b->literal.fval)
+			|| (isnan(a->literal.fval) && isnan(b->literal.fval));
 	case STORAGE_I8:
 	case STORAGE_I16:
 	case STORAGE_I32:
