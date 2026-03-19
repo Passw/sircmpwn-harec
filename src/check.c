@@ -1552,10 +1552,7 @@ check_expr_cast(struct context *ctx,
 		xcalloc(1, sizeof(struct expression));
 	const struct type *secondary = expr->cast.secondary =
 		type_store_lookup_atype(ctx, aexpr->cast.type);
-	// TODO: Instead of allowing errors on casts to void, we should use a
-	// different nonterminal
-	check_expression(ctx, aexpr->cast.value, value,
-			secondary == &builtin_type_void ? NULL : secondary);
+	check_expression(ctx, aexpr->cast.value, value, secondary);
 
 	const struct type *primary = type_dealias(ctx, expr->cast.value->result);
 	if (primary->storage == STORAGE_INVALID
