@@ -3,7 +3,7 @@ use rt::{compile, status};
 def size_tag = 185362065;
 def f32_tag = 118251589;
 def int_tag = 218917303;
-def void_tag = 302805398;
+def void_tag = 0;
 def u8_tag = 369915874;
 def u16_tag = 353138255;
 def u32_tag = 336360636;

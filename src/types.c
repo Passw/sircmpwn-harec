@@ -446,6 +446,8 @@ type_hash(const struct type *type)
 	uint32_t hash = FNV1A_INIT;
 	hash = fnv1a(hash, type->storage);
 	switch (type->storage) {
+	case STORAGE_VOID:
+		return 0;
 	case STORAGE_BOOL:
 	case STORAGE_INVALID:
 	case STORAGE_F32:
@@ -469,7 +471,6 @@ type_hash(const struct type *type)
 	case STORAGE_UINTPTR:
 	case STORAGE_UNDEFINED:
 	case STORAGE_VALIST:
-	case STORAGE_VOID:
 	case STORAGE_DONE:
 	case STORAGE_STRING:
 		break; // built-ins
@@ -1382,7 +1383,7 @@ builtin_types_init(enum arch target)
 		&builtin_type_u8, &builtin_type_u16, &builtin_type_u32,
 		&builtin_type_u64, &builtin_type_uint, &builtin_type_uintptr,
 		&builtin_type_null, &builtin_type_rune, &builtin_type_size,
-		&builtin_type_void, &builtin_type_done, &builtin_type_nomem,
+		&builtin_type_never, &builtin_type_done, &builtin_type_nomem,
 		&builtin_type_str, &builtin_type_valist,
 	};
 	for (size_t i = 0; i < sizeof(builtins) / sizeof(builtins[0]); ++i) {
