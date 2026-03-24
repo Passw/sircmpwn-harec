@@ -436,7 +436,8 @@ tagged_init(struct context *ctx, struct type *type,
 		} else if (!type_equal(membs[i], membs[i - 1])) {
 			char *first_name = gen_typename(membs[i - 1]);
 			char *second_name = gen_typename(membs[i]);
-			error(ctx, loc, NULL, "Hash collision between %s and %s",
+			error(ctx, loc, NULL,
+				"Tagged union can't contain both %s and %s (hash collision)",
 				first_name, second_name);
 		}
 		assert(membs[i]->storage != STORAGE_NULL || !valid);
