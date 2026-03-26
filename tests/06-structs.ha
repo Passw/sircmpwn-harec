@@ -561,6 +561,8 @@ export type embedded_underscores = struct {
 	union { struct { _: u32 }, },
 };
 
+type packed_is_distinct = (struct { x: u8, y: u8 } | struct @packed { x: u8, y: u8 });
+
 export fn main() void = {
 	padding();
 	storage();
