@@ -228,6 +228,14 @@ fn assertions() void = {
 	let a: (u8 | u16) = 42u16;
 	assert(a is u16);
 	assert(a as u16 == 42u16);
+
+	assert(a is (u8 | u16));
+	assert(a as (u8 | u16) as u16 == 42);
+
+	let b: (u8 | u16) = 67u8;
+	assert(&b is *u8);
+	assert(*(&b as *u8) == 67);
+	assert(&b is *(u8 | u16));
 };
 
 fn reject() void = {
