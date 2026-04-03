@@ -3781,10 +3781,14 @@ gen_data_item(struct gen_context *ctx, const struct expression *expr,
 	case STORAGE_POINTER:
 		item->type = QD_VALUE;
 		switch (ctx->arch.ptr->stype) {
+		case Q_WORD:
+			item->value = constw((uint32_t)literal->uval);
+			break;
 		case Q_LONG:
 			item->value = constl((uint64_t)literal->uval);
 			break;
-		default: assert(0);
+		default:
+			assert(0);
 		}
 		break;
 	case STORAGE_ARRAY:

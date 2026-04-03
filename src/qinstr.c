@@ -48,6 +48,8 @@ store_for_type(struct gen_context *ctx, const struct type *type)
 		return Q_STORED;
 	case STORAGE_SIZE:
 		switch (ctx->arch.sz->stype) {
+		case Q_WORD:
+			return Q_STOREW;
 		case Q_LONG:
 			return Q_STOREL;
 		default:
@@ -58,6 +60,8 @@ store_for_type(struct gen_context *ctx, const struct type *type)
 	case STORAGE_UINTPTR:
 	case STORAGE_NULL:
 		switch (ctx->arch.ptr->stype) {
+		case Q_WORD:
+			return Q_STOREW;
 		case Q_LONG:
 			return Q_STOREL;
 		default:
@@ -122,6 +126,8 @@ load_for_type(struct gen_context *ctx, const struct type *type)
 		return Q_LOADD;
 	case STORAGE_SIZE:
 		switch (ctx->arch.sz->stype) {
+		case Q_WORD:
+			return Q_LOADUW;
 		case Q_LONG:
 			return Q_LOADL;
 		default:
@@ -131,6 +137,10 @@ load_for_type(struct gen_context *ctx, const struct type *type)
 	case STORAGE_POINTER:
 	case STORAGE_UINTPTR:
 		switch (ctx->arch.ptr->stype) {
+		case Q_WORD:
+			// XXX: pointers zero-extend; this should prolly be
+			// documented somewhere
+			return Q_LOADUW;
 		case Q_LONG:
 			return Q_LOADL;
 		default:
