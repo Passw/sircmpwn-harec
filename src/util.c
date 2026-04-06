@@ -82,7 +82,7 @@ xvfprintf(FILE *restrict f, const char *restrict fmt, va_list ap)
 {
 	int n = vfprintf(f, fmt, ap);
 	if (f != stderr && n < 0) {
-		perror("fprintf");
+		perror("Write error");
 		exit(EXIT_ABNORMAL);
 	}
 	return n;
