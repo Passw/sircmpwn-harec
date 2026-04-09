@@ -1452,7 +1452,7 @@ check_expr_binding(struct context *ctx,
 			} else if (initializer->result->array.members
 					!= type->array.members) {
 				char *inittype = gen_typename(initializer->result);
-				char *bindingtype= gen_typename(type);
+				char *bindingtype = gen_typename(type);
 				error(ctx, aexpr->loc, expr,
 					"Initializer of type %s is not assignable to binding type %s",
 					inittype, bindingtype);
