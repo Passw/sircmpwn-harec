@@ -2250,7 +2250,7 @@ check_expr_for_each(struct context *ctx,
 		if (initializer_type->storage == STORAGE_ARRAY
 				&& initializer_type->size == SIZE_UNDEFINED) {
 			error(ctx, abinding->initializer->loc, initializer,
-				"Cannot iterate over array of undefined size");
+				"Cannot iterate over array of type with undefined size");
 			return;
 		}
 		if (expr->_for.kind == FOR_EACH_VALUE) {
@@ -2996,7 +2996,7 @@ check_expr_slice(struct context *ctx,
 	} else if (dtype->storage == STORAGE_ARRAY
 			&& dtype->array.length == SIZE_UNDEFINED) {
 		error(ctx, aexpr->loc, expr,
-			"Must have end index on array of undefined length");
+			"Must have end index when slicing unbounded array");
 		return;
 	}
 
