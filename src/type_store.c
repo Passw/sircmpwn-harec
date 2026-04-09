@@ -1031,7 +1031,7 @@ type_store_lookup_array(struct context *ctx, struct location loc,
 	}
 	if (members->size == SIZE_UNDEFINED) {
 		error(ctx, loc, NULL,
-			"Type of undefined size is not a valid member of a bounded array");
+			"Type of undefined size is not a valid array member");
 		return &builtin_type_invalid;
 	}
 	assert(members->align != 0);
