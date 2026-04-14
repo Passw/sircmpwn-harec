@@ -25,7 +25,7 @@ fn strstatus(status: int) str = {
 	case status::_EXEC_FAILED =>
 		return "internal error: compiler execve failed";
 	case =>
-		return itos(status: int);
+		return u64tos(status: u8);
 	};
 };
 
@@ -78,7 +78,7 @@ export fn compile(
 	if (!wifexited(wstatus)) {
 		assert(wifsignaled(wstatus));
 		write_stderr("signaled ");
-		write_stderr(itos(wtermsig(wstatus)));
+		write_stderr(u64tos(wtermsig(wstatus): u64));
 		write_stderr("\n");
 		return error;
 	};

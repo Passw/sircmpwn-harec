@@ -11,7 +11,6 @@ rt_ha = \
 	rt/compile.ha \
 	rt/cstrings.ha \
 	rt/ensure.ha \
-	rt/itos.ha \
 	rt/memcpy.ha \
 	rt/memmove.ha \
 	rt/memset.ha \
