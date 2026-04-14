@@ -3,6 +3,5 @@
 src/*.o
 tests/*
 !tests/*.ha
-!tests/*.c
 !tests/run
 config.mk
