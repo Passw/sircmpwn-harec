@@ -112,8 +112,5 @@ export fn mmap(
 export fn munmap(addr: *opaque, length: size) int =
 	syscall2(SYS_munmap, addr: uintptr: u64, length: u64): int;
 
-export fn mprotect(addr: *opaque, length: size, prot: uint) int =
-	syscall3(SYS_mprotect, addr: uintptr: u64, length: u64, prot: u64): int;
-
 export def SIGABRT: int	= 6;
 export def SIGCHLD: int	= 17;
