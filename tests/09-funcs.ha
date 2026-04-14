@@ -202,7 +202,7 @@ fn zerosizeparams() void = {
 
 fn neverfunc(x: int) never = if (x == 1) exit(0) else abort();
 
-fn _never() void = {
+fn _never() never = {
 	if (false) neverfunc(0);
 	if (true) neverfunc(neverfunc(1));
 	abort();
