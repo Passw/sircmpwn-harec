@@ -2011,8 +2011,10 @@ check_expr_delete(struct context *ctx,
 		otype = dexpr->access.array->result;
 		break;
 	default:
-		error(ctx, aexpr->delete.expr->loc, expr,
-			"Deleted expression must be slicing or indexing expression");
+		if (dexpr->result->storage != STORAGE_INVALID) {
+			error(ctx, aexpr->delete.expr->loc, expr,
+				"Deleted expression must be slicing or indexing expression");
+		}
 		return;
 	}
 	otype = check_autodereference(ctx, aexpr->loc, otype);
