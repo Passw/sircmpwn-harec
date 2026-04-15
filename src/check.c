@@ -3615,9 +3615,8 @@ check_expr_unarithm(struct context *ctx,
 				operand->result = promoted;
 			}
 		} else if (ptrhint) {
-			uint32_t result_id = type_dealias(ctx, operand->result)->id;
-			uint32_t ptrhint_id = type_dealias(ctx, ptrhint)->id;
-			if (result_id == ptrhint_id) {
+			if (type_dealias(ctx, operand->result)
+					== type_dealias(ctx, ptrhint)) {
 				operand->result = ptrhint;
 			}
 		}
