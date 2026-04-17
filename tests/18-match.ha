@@ -1,3 +1,5 @@
+use rt::{compile, status};
+
 type foo = void;
 type bar = void;
 type foobar = (foo | bar);
@@ -354,6 +356,27 @@ fn label() void = {
 	};
 };
 
+fn undefined_size() void = {
+	compile(status::CHECK, `
+		fn f(x: (int | void)) void = match (x) {
+		case never => void;
+		case => void;
+		};
+	`)!;
+	compile(status::CHECK, `
+		fn f(x: *(int | opaque)) void = match (*x) {
+		case opaque => void;
+		case => void;
+		};
+	`)!;
+	compile(status::CHECK, `
+		fn f(x: (int | void)) void = match (x) {
+		case opaque => void;
+		case => void;
+		};
+	`)!;
+};
+
 export fn main() void = {
 	tagged_ptr();
 	tagged();
@@ -368,5 +391,6 @@ export fn main() void = {
 	alignment_conversion();
 	binding();
 	label();
+	undefined_size();
 	// TODO: Test exhaustiveness and dupe detection
 };

@@ -2554,15 +2554,15 @@ check_expr_match(struct context *ctx,
 			if (!check_match_case(&mctx, ctype, expr, acase->type->loc)) {
 				return;
 			}
+			if (ctype->size == SIZE_UNDEFINED) {
+				error(ctx, acase->type->loc, expr,
+					"Can't use type of undefined size in match case");
+				return;
+			}
 		}
 
 		if (acase->name != NULL) {
 			assert(ctype);
-			if (ctype->size == SIZE_UNDEFINED) {
-				error(ctx, acase->type->loc, expr,
-					"Cannot create binding for type of undefined size");
-				return;
-			}
 			if (ctype->storage == STORAGE_NULL) {
 				error(ctx, aexpr->loc, expr,
 					"Null is not a valid type for a binding");
