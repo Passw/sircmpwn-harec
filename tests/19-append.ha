@@ -4,7 +4,7 @@ fn basics() void = {
 	let x: []int = [];
 	append(x, 1)!;
 	append(x, 2)!;
-	let res: (void | nomem) = append(x, 3)!;
+	let res: (void | nomem) = append(x, 3);
 	assert(res is void);
 	assert(len(x) == 3);
 	assert(x[0] == 1 && x[1] == 2 && x[2] == 3);
