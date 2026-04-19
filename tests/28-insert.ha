@@ -9,7 +9,7 @@ fn basics() void = {
 	for (let i = 0z; i < len(x); i += 1) {
 		assert(x[i] == i: int + 1);
 	};
-	let res: (void | nomem) = insert(y[0], 42)!;
+	let res: (void | nomem) = insert(y[0], 42);
 	assert(res is void);
 	assert(len(x) == 6 && x[0] == 42);
 	free(x);
