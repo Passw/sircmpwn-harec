@@ -2741,7 +2741,8 @@ check_expr_propagate(struct context *ctx,
 	if (type_dealias(ctx, intype)->storage != STORAGE_TAGGED) {
 		char *typename = gen_typename(intype);
 		error(ctx, aexpr->loc, expr,
-			"Cannot use error propagation on non-tagged type %s",
+			"Cannot use error %s on non-tagged type %s",
+			aexpr->propagate.abort ? "assertion" : "propagation",
 			typename);
 		free(typename);
 		return;
@@ -2766,7 +2767,8 @@ check_expr_propagate(struct context *ctx,
 
 	if (ret.len == 0) {
 		error(ctx, aexpr->loc, expr,
-			"No error can occur here, cannot propagate");
+			"No error can occur here, cannot %s",
+			aexpr->propagate.abort ? "use error assertion" : "propagate");
 		return;
 	}
 
