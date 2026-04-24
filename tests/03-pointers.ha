@@ -109,6 +109,9 @@ fn reject() void = {
 		};
 	")!;
 	compile(status::CHECK, "
+		let a = null;
+	")!;
+	compile(status::CHECK, "
 		fn test() void = {
 			let a = [null];
 		};
