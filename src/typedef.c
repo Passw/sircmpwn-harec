@@ -87,12 +87,15 @@ emit_literal(const struct expression *expr, FILE *out)
 			storage_to_suffix(t->storage));
 		break;
 	case STORAGE_POINTER:
-		xfprintf(out, "%" PRIu64 ": u64: uintptr: ", val->uval);
+		if (val->uval == 0) {
+			xfprintf(out, "null: ");
+		} else {
+			xfprintf(out, "%" PRIu64 ": u64: uintptr: ", val->uval);
+		}
 		emit_type(expr->result, out);
 		break;
 	case STORAGE_NULL:
-		xfprintf(out, "null: ");
-		emit_type(expr->result, out);
+		xfprintf(out, "null");
 		break;
 	case STORAGE_SIZE:
 	case STORAGE_U16:
@@ -348,7 +351,8 @@ emit_decl_const(const struct declaration *decl, FILE *out)
 	char *ident = ident_unparse(decl->ident);
 	xfprintf(out, "export def %s", ident);
 	assert(decl->constant.type);
-	if (decl->constant.type->size != SIZE_UNDEFINED) {
+	if (decl->constant.type->size != SIZE_UNDEFINED
+			&& decl->constant.type->storage != STORAGE_NULL) {
 		xfprintf(out, ": ");
 		emit_type(decl->constant.type, out);
 	}

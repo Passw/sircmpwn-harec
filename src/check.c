@@ -4183,12 +4183,6 @@ resolve_const(struct context *ctx, struct scope_object *obj)
 	check_expression(ctx, decl->init, init, type);
 	if (!decl->type) {
 		type = init->result;
-		if (type->storage == STORAGE_NULL) {
-			error(ctx, decl->init->loc, obj->value,
-				"Null is not a valid type for a constant");
-			type = &builtin_type_invalid;
-			goto end;
-		}
 	}
 	if (obj->idecl->decl.exported) {
 		struct location loc =

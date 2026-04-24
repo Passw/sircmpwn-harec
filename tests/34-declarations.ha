@@ -2,6 +2,7 @@ use rt::{compile, status, toutf8};
 use testmod;
 
 def ARR: [3]u8 = [1, 2, 3];
+def NULLDEF = null;
 
 // interdependent constants
 def A1: int = -1;
@@ -60,6 +61,9 @@ fn constants() void = {
 	ZT.1;
 	ZA;
 	assert(len(ZA) == 0);
+
+	let x: nullable *int = NULLDEF;
+	let x: nullable *f64 = NULLDEF;
 };
 
 def C = 42;

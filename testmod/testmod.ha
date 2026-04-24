@@ -33,6 +33,8 @@ export @symbol("s_y") let s_b: int = 1;
 export type f64_alias = f64;
 export def val5: f64_alias = 0.0;
 
+export def _null = null;
+
 export type uintptr_enum = enum uintptr {
 	MAX = ~0u64: uintptr,
 };
