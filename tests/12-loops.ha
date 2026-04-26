@@ -520,7 +520,7 @@ fn for_each() void = {
 		};
 	};")!;
 
-	compile(status::PARSE, "fn test() void = { for (static let i = 0; i < 4; i += 1) { i; } };")!;
+	compile(status::PARSE, "fn test() void = { for (static let i = 0; i < 4; i += 1) { i; }; };")!;
 	compile(status::CHECK, "type done_alias = done; fn next() (int | done_alias | str | done) = done; fn test() void = { for (let x => next()) { x; }; };")!;
 	compile(status::CHECK, "fn test() void = { let slice: []int = []; for (let x .. slice) { delete(slice[0]); };};")!;
 	compile(status::CHECK, "fn test() void = { let slice: []int = []; for (let x .. slice) { append(slice, 1); };};")!;
