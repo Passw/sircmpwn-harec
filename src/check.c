@@ -381,7 +381,7 @@ check_expr_access(struct context *ctx,
 			return;
 		}
 		if (atype->storage == STORAGE_SLICE
-				&& atype->array.members->size == SIZE_UNDEFINED) {
+				&& atype->slice.members->size == SIZE_UNDEFINED) {
 			error(ctx, aexpr->access.array->loc, expr,
 				"Cannot use index into slice whose member type has undefined size");
 			return;
@@ -394,11 +394,11 @@ check_expr_access(struct context *ctx,
 		}
 		expr->access.index = lower_implicit_cast(ctx, 
 			&builtin_type_size, expr->access.index);
-		expr->result = atype->array.members;
+		expr->result = list_get_members(atype);
 
 		// Compile-time bounds check
 		if (atype->storage == STORAGE_ARRAY
-				&& atype->array.length != SIZE_UNDEFINED) {
+				&& atype->array.kind != ARR_UNBOUNDED) {
 			struct expression *evaled = xcalloc(1, sizeof(struct expression));
 			if (eval_expr(ctx, expr->access.index, evaled)) {
 				if (evaled->literal.uval >= atype->array.length) {
@@ -501,7 +501,7 @@ check_expr_alloc_init(struct context *ctx,
 	}
 
 	if (type_dealias(ctx, objtype)->storage == STORAGE_ARRAY
-			&& type_dealias(ctx, objtype)->array.expandable) {
+			&& type_dealias(ctx, objtype)->array.kind == ARR_EXPANDABLE) {
 		const struct type *atype = type_dealias(ctx, objtype);
 		if (!inithint) {
 			error(ctx, aexpr->loc, expr,
@@ -558,7 +558,7 @@ check_expr_alloc_cap(struct context *ctx,
 
 	const struct type *objtype = expr->alloc.init->result;
 	if (type_dealias(ctx, objtype)->storage == STORAGE_ARRAY) {
-		if (type_dealias(ctx, objtype)->array.length == SIZE_UNDEFINED) {
+		if (type_dealias(ctx, objtype)->array.kind == ARR_UNBOUNDED) {
 			error(ctx, aexpr->alloc.init->loc, expr,
 				"Slice initializer must have defined length");
 			return;
@@ -598,12 +598,13 @@ check_expr_alloc_cap(struct context *ctx,
 		}
 	}
 
-	const struct type *membtype = type_dealias(ctx, objtype)->array.members;
+	const struct type *membtype =
+		list_get_members(type_dealias(ctx, objtype));
 	expr->alloc.allocation_result = type_store_lookup_slice(ctx,
 		aexpr->alloc.init->loc, membtype);
 
 	if (objtype->storage == STORAGE_ARRAY
-			&& objtype->array.expandable) {
+			&& objtype->array.kind == ARR_EXPANDABLE) {
 		expr->alloc.kind = ALLOC_LEN;
 	}
 }
@@ -630,10 +631,10 @@ check_expr_alloc_copy(struct context *ctx,
 		return;
 	}
 	if (result->storage == STORAGE_ARRAY) {
-		if (result->array.expandable) {
+		if (result->array.kind == ARR_EXPANDABLE) {
 			error(ctx, aexpr->alloc.init->loc, NULL,
 				"Slice initializer can't be an expandable array");
-		} else if (result->array.length == SIZE_UNDEFINED) {
+		} else if (result->array.kind == ARR_UNBOUNDED) {
 			error(ctx, aexpr->alloc.init->loc, NULL,
 				"Slice initializer can't be an unbounded array");
 		}
@@ -642,7 +643,7 @@ check_expr_alloc_copy(struct context *ctx,
 
 	result = type_dealias(ctx, expr->alloc.init->result);
 	expr->alloc.allocation_result = type_store_lookup_slice(ctx,
-			aexpr->alloc.init->loc, result->array.members);
+			aexpr->alloc.init->loc, list_get_members(result));
 }
 
 static void
@@ -809,7 +810,7 @@ check_expr_append_insert(struct context *ctx,
 		free(typename);
 		return;
 	}
-	if (sltype->array.members->size == SIZE_UNDEFINED) {
+	if (sltype->slice.members->size == SIZE_UNDEFINED) {
 		error(ctx, aexpr->append.object->loc, expr,
 			"Cannot %s %sto slice whose member type has undefined size",
 			exprtype_name, expr->type == EXPR_APPEND ? "" : "in");
@@ -820,15 +821,15 @@ check_expr_append_insert(struct context *ctx,
 
 	if (!expr->append.is_multi && !aexpr->append.length) {
 		check_expression(ctx, aexpr->append.value, expr->append.value,
-				sltype->array.members);
-		if (!type_is_assignable(ctx, sltype->array.members,
+				sltype->slice.members);
+		if (!type_is_assignable(ctx, sltype->slice.members,
 				expr->append.value->result)) {
 			error(ctx, aexpr->append.value->loc, expr,
 				"Value type must be assignable to object member type");
 			return;
 		}
 		expr->append.value = lower_implicit_cast(ctx, 
-			sltype->array.members, expr->append.value);
+			sltype->slice.members, expr->append.value);
 		return;
 	}
 
@@ -836,7 +837,7 @@ check_expr_append_insert(struct context *ctx,
 	const struct type *valtype = type_dealias(ctx, expr->append.value->result);
 	if (aexpr->append.length) {
 		if (valtype->storage != STORAGE_ARRAY
-				|| !valtype->array.expandable) {
+				|| valtype->array.kind != ARR_EXPANDABLE) {
 			error(ctx, aexpr->append.value->loc, expr,
 				"Value must be an expandable array in append with length");
 			return;
@@ -860,7 +861,7 @@ check_expr_append_insert(struct context *ctx,
 		error(ctx, aexpr->loc, expr, "Value array must be bounded");
 		return;
 	}
-	if (sltype->array.members != valtype->array.members) {
+	if (sltype->slice.members != list_get_members(valtype)) {
 		error(ctx, aexpr->loc, expr,
 			"Value member type must match object member type");
 		return;
@@ -1066,7 +1067,7 @@ check_expr_assign(struct context *ctx,
 
 	if (object->type == EXPR_SLICE
 			&& value->result->storage == STORAGE_ARRAY
-			&& value->result->array.expandable) {
+			&& value->result->array.kind == ARR_EXPANDABLE) {
 		expr->assign.value = value;
 	} else {
 		expr->assign.value =
@@ -1260,7 +1261,7 @@ type_has_default(struct context *ctx, const struct type *type)
 	case STORAGE_VALIST:
 		return false;
 	case STORAGE_ARRAY:
-		return type->array.length != SIZE_UNDEFINED
+		return type->array.kind != ARR_UNBOUNDED
 			&& type_has_default(ctx, type->array.members);
 	case STORAGE_ENUM:
 		for (struct scope_object *obj = type->_enum.values->objects;
@@ -1741,7 +1742,7 @@ check_expr_array_literal(struct context *ctx,
 		switch (hint->storage) {
 		case STORAGE_ARRAY:
 		case STORAGE_SLICE:
-			type = hint->array.members;
+			type = list_get_members(hint);
 			break;
 		case STORAGE_TAGGED:;
 			const struct type_tagged_union *htagged = &hint->tagged;
@@ -1751,7 +1752,7 @@ check_expr_array_literal(struct context *ctx,
 				if (t->storage == STORAGE_ARRAY
 						|| t->storage == STORAGE_SLICE) {
 					hint = t;
-					type = hint->array.members;
+					type = list_get_members(hint);
 					++narray;
 				}
 			}
@@ -1802,8 +1803,8 @@ check_expr_array_literal(struct context *ctx,
 		error(ctx, aexpr->loc, expr, "Cannot infer array type from context, try casting it to the desired type");
 		return;
 	}
-	expr->result = type_store_lookup_array(ctx, aexpr->loc,
-			type, len, aexpr->literal.array.expand);
+	expr->result = type_store_lookup_array(ctx, aexpr->loc, type, len,
+		aexpr->literal.array.expand ? ARR_EXPANDABLE : ARR_BOUNDED);
 }
 
 static void
@@ -2206,7 +2207,7 @@ check_expr_for_each(struct context *ctx,
 			// fallthrough
 		case FOR_EACH_VALUE:
 			init_type_hint = type_store_lookup_array(ctx, aexpr->loc,
-				init_type_hint, SIZE_UNDEFINED, false);
+				init_type_hint, SIZE_UNDEFINED, ARR_UNBOUNDED);
 			break;
 		case FOR_EACH_ITERATOR: {
 			struct type_tagged_union tags = { .types = NULL };
@@ -2256,10 +2257,10 @@ check_expr_for_each(struct context *ctx,
 			return;
 		}
 		if (expr->_for.kind == FOR_EACH_VALUE) {
-			initializer_result = initializer_type->array.members;
+			initializer_result = list_get_members(initializer_type);
 		} else {
 			initializer_result = type_store_lookup_pointer(ctx,
-				aexpr->loc, initializer_type->array.members, false);
+				aexpr->loc, list_get_members(initializer_type), false);
 		}
 		break;
 	case FOR_EACH_ITERATOR:
@@ -2655,7 +2656,7 @@ check_expr_measure(struct context *ctx,
 			return;
 		}
 		if (vstor == STORAGE_ARRAY) {
-			if (type->array.length == SIZE_UNDEFINED) {
+			if (type->array.kind == ARR_UNBOUNDED) {
 				error(ctx, aexpr->measure.value->loc, expr,
 					"Cannot take length of unbounded array type");
 				return;
@@ -2919,7 +2920,7 @@ slice_bounds_check(struct context *ctx, struct expression *expr)
 	if (expr->slice.end && eval_expr(ctx, expr->slice.end, &end)) {
 		bounds |= END;
 	}
-	if (dtype->storage == STORAGE_ARRAY && dtype->array.length != SIZE_UNDEFINED) {
+	if (dtype->storage == STORAGE_ARRAY && dtype->array.kind != ARR_UNBOUNDED) {
 		bounds |= LENGTH;
 	}
 
@@ -2975,7 +2976,7 @@ check_expr_slice(struct context *ctx,
 				type_storage_unparse(itype->storage));
 			return;
 		}
-		if (dtype->array.members->size == SIZE_UNDEFINED) {
+		if (list_get_members(dtype)->size == SIZE_UNDEFINED) {
 			error(ctx, aexpr->slice.start->loc, expr,
 				"Cannot use left subslicing operand on a slice with member type of unknown size");
 			return;
@@ -2998,7 +2999,7 @@ check_expr_slice(struct context *ctx,
 		expr->slice.end = lower_implicit_cast(ctx, 
 			&builtin_type_size, expr->slice.end);
 	} else if (dtype->storage == STORAGE_ARRAY
-			&& dtype->array.length == SIZE_UNDEFINED) {
+			&& dtype->array.kind == ARR_UNBOUNDED) {
 		error(ctx, aexpr->loc, expr,
 			"Must have end index when slicing unbounded array");
 		return;
@@ -3546,8 +3547,8 @@ check_expr_unarithm(struct context *ctx,
 		case UN_ADDRESS:
 			if (hint->storage == STORAGE_SLICE) {
 				operand_hint = type_store_lookup_array(ctx,
-					aexpr->loc, hint->array.members,
-					SIZE_UNDEFINED, false);
+					aexpr->loc, hint->slice.members,
+					SIZE_UNDEFINED, ARR_UNBOUNDED);
 			} else if (hint->storage == STORAGE_POINTER) {
 				operand_hint = hint->pointer.referent;
 			}
@@ -4102,7 +4103,7 @@ check_exported_type(struct context *ctx,
 		break;
 	case STORAGE_ARRAY:
 	case STORAGE_SLICE:
-		check_exported_type(ctx, loc, type->array.members);
+		check_exported_type(ctx, loc, list_get_members(type));
 		break;
 	case STORAGE_ERROR:
 		check_exported_type(ctx, loc, type->error);

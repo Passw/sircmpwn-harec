@@ -147,6 +147,22 @@ type_get_value(const struct type *type, uint64_t index)
 	return NULL;
 }
 
+const struct type *
+list_get_members(const struct type *type)
+{
+	// array.members and slice.members have the same offset, so this
+	// function *technically* doesn't need to exist, but like it's better if
+	// it does
+	switch (type->storage) {
+	case STORAGE_ARRAY:
+		return type->array.members;
+	case STORAGE_SLICE:
+		return type->slice.members;
+	default:
+		assert(0); // Invariant
+	}
+}
+
 bool
 type_is_error(struct context *ctx, const struct type *type)
 {
@@ -486,7 +502,7 @@ type_hash(const struct type *type)
 	case STORAGE_ARRAY:
 		hash = fnv1a_u32(hash, type_hash(type->array.members));
 		hash = fnv1a_size(hash, type->array.length);
-		hash = fnv1a_u32(hash, type->array.expandable);
+		hash = fnv1a_u32(hash, type->array.kind);
 		break;
 	case STORAGE_FUNCTION:
 		hash = fnv1a_u32(hash, type_hash(type->func.result));
@@ -510,7 +526,7 @@ type_hash(const struct type *type)
 		hash = fnv1a_u32(hash, type_hash(type->pointer.referent));
 		break;
 	case STORAGE_SLICE:
-		hash = fnv1a_u32(hash, type_hash(type->array.members));
+		hash = fnv1a_u32(hash, type_hash(type->slice.members));
 		break;
 	case STORAGE_STRUCT:
 	case STORAGE_UNION:
@@ -582,10 +598,11 @@ type_equal(const struct type *a, const struct type *b)
 	case STORAGE_ERROR:
 		return type_equal(a->error, b->error);
 	case STORAGE_ARRAY:
-	case STORAGE_SLICE:
 		return a->array.length == b->array.length
-			&& a->array.expandable == b->array.expandable
+			&& a->array.kind == b->array.kind
 			&& type_equal(a->array.members, b->array.members);
+	case STORAGE_SLICE:
+		return type_equal(a->slice.members, b->slice.members);
 	case STORAGE_FUNCTION:
 		if (!type_equal(a->func.result, b->func.result)) {
 			return false;
@@ -1086,10 +1103,10 @@ type_is_assignable(struct context *ctx,
 		}
 		if (from->storage != STORAGE_SLICE
 				&& (from->storage != STORAGE_ARRAY
-				|| from->array.length == SIZE_UNDEFINED)) {
+				|| from->array.kind == ARR_UNBOUNDED)) {
 			return false;
 		}
-		to_secondary = strip_error(to->array.members);
+		to_secondary = strip_error(to->slice.members);
 		from_secondary = strip_error(from->array.members);
 		if (to_secondary->storage == STORAGE_OPAQUE) {
 			return true;
@@ -1099,12 +1116,12 @@ type_is_assignable(struct context *ctx,
 		if (from->storage != STORAGE_ARRAY) {
 			return false;
 		}
-		if (from->array.expandable) {
-			return to->array.length != SIZE_UNDEFINED
+		if (from->array.kind == ARR_EXPANDABLE) {
+			return to->array.kind == ARR_BOUNDED
 				&& to->array.length >= from->array.length
 				&& to->array.members == from->array.members;
 		} else {
-			return to->array.length == SIZE_UNDEFINED
+			return to->array.kind == ARR_UNBOUNDED
 				&& to->array.members == from->array.members;
 		}
 	case STORAGE_TAGGED:

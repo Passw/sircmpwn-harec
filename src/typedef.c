@@ -159,7 +159,8 @@ emit_literal(const struct expression *expr, FILE *out)
 				xfprintf(out, ", ");
 			}
 		}
-		if (t->array.expandable) {
+		if (t->storage == STORAGE_ARRAY
+				&& t->array.kind == ARR_EXPANDABLE) {
 			xfprintf(out, "...");
 		}
 		xfprintf(out, "]");
@@ -272,16 +273,16 @@ emit_type(const struct type *type, FILE *out)
 		emit_type(type->pointer.referent, out);
 		break;
 	case STORAGE_ARRAY:
-		if (type->array.length == SIZE_UNDEFINED) {
+		if (type->array.kind == ARR_UNBOUNDED) {
 			xfprintf(out, "[*]");
 		} else {
-			xfprintf(out, "[%zu]", type->array.length);
+			xfprintf(out, "[%" PRIu64 "]", type->array.length);
 		}
 		emit_type(type->array.members, out);
 		break;
 	case STORAGE_SLICE:
 		xfprintf(out, "[]");
-		emit_type(type->array.members, out);
+		emit_type(type->slice.members, out);
 		break;
 	case STORAGE_ALIAS:
 		ident = ident_unparse(type->alias.ident);
@@ -310,7 +311,7 @@ emit_type(const struct type *type, FILE *out)
 				emit_type(param->type, out);
 				xfprintf(out, ", ");
 			} else if (type->func.variadism == VARIADISM_HARE) {
-				emit_type(param->type->array.members, out);
+				emit_type(param->type->slice.members, out);
 				xfprintf(out, "...");
 			} else if (type->func.variadism == VARIADISM_C) {
 				emit_type(param->type, out);
@@ -384,7 +385,7 @@ emit_decl_func(const struct declaration *decl, FILE *out)
 			}
 			xfprintf(out, ", ");
 		} else if (fntype->func.variadism == VARIADISM_HARE) {
-			emit_type(param->type->array.members, out);
+			emit_type(param->type->slice.members, out);
 			xfprintf(out, "...");
 		} else if (fntype->func.variadism == VARIADISM_C) {
 			emit_type(param->type, out);

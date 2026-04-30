@@ -651,7 +651,7 @@ gen_access_index(struct gen_context *ctx, const struct expression *expr)
 		break;
 	case STORAGE_ARRAY:
 		qlval = mkqval(ctx, &glval);
-		if (ty->array.length != SIZE_UNDEFINED) {
+		if (ty->array.kind != ARR_UNBOUNDED) {
 			length = constl(ty->array.length);
 		} else {
 			checkbounds = false;
@@ -768,7 +768,7 @@ gen_expr_alloc_slice_array_at(struct gen_context *ctx,
 		struct gen_slice sl = gen_slice_ptrs(ctx, init);
 		load_slice_data(ctx, &sl, &initdata, &length, NULL);
 	} else if (inittype->storage == STORAGE_ARRAY) {
-		assert(inittype->array.length != SIZE_UNDEFINED);
+		assert(inittype->array.kind != ARR_UNBOUNDED);
 		length = constl(inittype->array.length);
 	} else {
 		abort(); // invariant
@@ -806,7 +806,7 @@ gen_expr_alloc_slice_array_at(struct gen_context *ctx,
 	push(&ctx->current->body, &lnonzero);
 
 	struct qbe_value sz = mkqtmp(ctx, ctx->arch.sz, ".%d");
-	struct qbe_value membsz = constl(sltype->array.members->size);
+	struct qbe_value membsz = constl(sltype->slice.members->size);
 	pushi(ctx->current, &sz, Q_MUL, &membsz, &qcap, NULL);
 
 	pushi(ctx->current, &qnewdata, Q_CALL, &ctx->rt.malloc, &sz, NULL);
@@ -1123,7 +1123,7 @@ gen_expr_assign_slice(struct gen_context *ctx, const struct expression *expr)
 	struct qbe_value oldlen_, *oldlen = &oldlen_, oldcap_, *oldcap = &oldcap_;
 	if (srctype->storage == STORAGE_ARRAY) {
 		optr = mkcopy(ctx, &obj, ".%d");
-		if (srctype->array.length == SIZE_UNDEFINED) {
+		if (srctype->array.kind == ARR_UNBOUNDED) {
 			oldlen = oldcap = NULL;
 		} else {
 			*oldlen = *oldcap = constl(srctype->array.length);
@@ -1135,7 +1135,7 @@ gen_expr_assign_slice(struct gen_context *ctx, const struct expression *expr)
 	gen_subslice_info(ctx, expr->assign.object, oldlen, oldcap, &ostart, NULL, &olen, NULL);
 
 	const struct type *vtype = type_dealias(NULL, expr->assign.value->result);
-	if (vtype->storage == STORAGE_ARRAY && vtype->array.expandable) {
+	if (vtype->storage == STORAGE_ARRAY && vtype->array.kind == ARR_EXPANDABLE) {
 		gen_expr_assign_slice_expandable(ctx, optr, ostart,
 			olen, expr->assign.value);
 		return;
@@ -1152,7 +1152,7 @@ gen_expr_assign_slice(struct gen_context *ctx, const struct expression *expr)
 
 	struct qbe_value vptr = mkqtmp(ctx, ctx->arch.ptr, ".%d");
 	struct qbe_value os = mkqtmp(ctx, ctx->arch.sz, ".%d");
-	struct qbe_value tmp = constl(vtype->array.members->size);
+	struct qbe_value tmp = constl(list_get_members(vtype)->size);
 	pushi(ctx->current, &os, Q_MUL, &ostart, &tmp, NULL);
 	pushi(ctx->current, &optr, Q_ADD, &optr, &os, NULL);
 	pushi(ctx->current, &vptr, Q_LOADL, &qval, NULL);
@@ -1567,7 +1567,7 @@ gen_expr_cast_slice_at(struct gen_context *ctx,
 		from = type_dealias(NULL, from->pointer.referent);
 	}
 	assert(from->storage == STORAGE_ARRAY);
-	assert(from->array.length != SIZE_UNDEFINED);
+	assert(from->array.kind != ARR_UNBOUNDED);
 
 	struct qbe_value data;
 	struct gen_value value = gen_expr(ctx, expr->cast.value);
@@ -1669,12 +1669,12 @@ gen_expr_cast_array_at(struct gen_context *ctx,
 	const struct type *typeout = type_dealias(NULL, expr->result);
 	const struct type *typein = type_dealias(NULL, expr->cast.value->result);
 	gen_expr_at(ctx, expr->cast.value, out);
-	if (!typein->array.expandable) {
+	if (typein->array.kind != ARR_EXPANDABLE) {
 		return;
 	}
 
-	assert(typein->array.length != SIZE_UNDEFINED
-			&& typeout->array.length != SIZE_UNDEFINED);
+	assert(typein->array.kind != ARR_UNBOUNDED
+		&& typeout->array.kind != ARR_UNBOUNDED);
 	assert(typeout->array.length >= typein->array.length);
 
 	const struct type *membtype = typein->array.members;
@@ -2092,7 +2092,7 @@ gen_literal_array_at(struct gen_context *ctx,
 		++n;
 	}
 	assert(n == atype->array.length);
-	if (!atype->array.expandable || n == 0) {
+	if (atype->array.kind != ARR_EXPANDABLE || n == 0) {
 		return;
 	}
 	assert(out.type);
@@ -2390,7 +2390,7 @@ gen_expr_delete(struct gen_context *ctx, const struct expression *expr)
 	struct qbe_value endptr = mkqtmp(ctx, ctx->arch.ptr, ".%d");
 	struct qbe_value mlen = mkqtmp(ctx, ctx->arch.ptr, ".%d");
 	struct qbe_value membsz =
-		constl(type_dealias(NULL, object.type)->array.members->size);
+		constl(type_dealias(NULL, object.type)->slice.members->size);
 	pushi(ctx->current, &startptr, Q_MUL, &qstart, &membsz, NULL);
 	pushi(ctx->current, &startptr, Q_ADD, &startptr, &data, NULL);
 	pushi(ctx->current, &endptr, Q_MUL, &qend, &membsz, NULL);
@@ -2447,7 +2447,7 @@ gen_expr_for_with(struct gen_context *ctx, const struct expression *expr,
 		const struct type *initializer_type = type_dealias(NULL,
 			ginitializer.type);
 
-		const struct type *var_type = initializer_type->array.members;
+		const struct type *var_type = list_get_members(initializer_type);
 
 		if (named_binding) {
 			if (kind == FOR_EACH_POINTER) {
@@ -2463,9 +2463,6 @@ gen_expr_for_with(struct gen_context *ctx, const struct expression *expr,
 			pushprei(ctx->current, &qcur_object, alloc, &qcur_object_sz, NULL);
 		}
 
-		qlength = constl(initializer_type->array.length);
-		assert(initializer_type->storage == STORAGE_ARRAY
-			|| initializer_type->storage == STORAGE_SLICE);
 		if (initializer_type->storage == STORAGE_SLICE) {
 			qlength = mkqtmp(ctx, ctx->arch.ptr, "len.%d");
 			struct gen_slice slice = gen_slice_ptrs(ctx,
@@ -2480,10 +2477,14 @@ gen_expr_for_with(struct gen_context *ctx, const struct expression *expr,
 			} else {
 				load_slice_data(ctx, &slice, NULL, &qlength, NULL);
 			}
-		} else if (named_binding) {
-			gptr = mkgtemp(ctx, var_type, ".%d");
-			qptr = mklval(ctx, &gptr);
-			pushi(ctx->current, &qptr, Q_COPY, &qinitializer, NULL);
+		} else {
+			assert(initializer_type->storage == STORAGE_ARRAY);
+			qlength = constl(initializer_type->array.length);
+			if (named_binding) {
+				gptr = mkgtemp(ctx, var_type, ".%d");
+				qptr = mklval(ctx, &gptr);
+				pushi(ctx->current, &qptr, Q_COPY, &qinitializer, NULL);
+			}
 		}
 
 		struct qbe_value qzero = constl(0);
@@ -2658,8 +2659,9 @@ gen_expr_for_with(struct gen_context *ctx, const struct expression *expr,
 		gen_expr(ctx, expr->_for.afterthought);
 	}
 	if ((kind == FOR_EACH_VALUE || kind == FOR_EACH_POINTER) && named_binding) {
-		struct qbe_value qmember_sz = constl(
-			type_dealias(NULL, ginitializer.type)->array.members->size);
+		const struct type *members = list_get_members(
+			type_dealias(NULL, ginitializer.type));
+		struct qbe_value qmember_sz = constl(members->size);
 		pushi(ctx->current, &qptr, Q_ADD, &qptr, &qmember_sz, NULL);
 	}
 
@@ -2783,7 +2785,8 @@ gen_expr_append_insert_with(struct gen_context *ctx,
 			return gvout;
 		}
 		appendlen = mkqval(ctx, &length);
-		assert(valtype->storage == STORAGE_ARRAY && valtype->array.expandable);
+		assert(valtype->storage == STORAGE_ARRAY
+			&& valtype->array.kind == ARR_EXPANDABLE);
 	} else if (!expr->append.is_multi) {
 		appendlen = constl(1);
 	}
@@ -2803,7 +2806,7 @@ gen_expr_append_insert_with(struct gen_context *ctx,
 
 	if (expr->append.is_multi) {
 		if (valtype->storage == STORAGE_ARRAY) {
-			assert(valtype->array.length != SIZE_UNDEFINED);
+			assert(valtype->array.kind != ARR_UNBOUNDED);
 			appendlen = constl(valtype->array.length);
 		} else {
 			appendlen = mkqtmp(ctx, ctx->arch.sz, ".%d");
@@ -2818,7 +2821,7 @@ gen_expr_append_insert_with(struct gen_context *ctx,
 	pushi(ctx->current, &newlen, Q_ADD, &prevlen, &appendlen, NULL);
 	store_slice_data(ctx, &sl, NULL, &newlen, NULL);
 
-	const struct type *mtype = type_dealias(NULL, slice.type)->array.members;
+	const struct type *mtype = type_dealias(NULL, slice.type)->slice.members;
 	struct qbe_value membsz = constl(mtype->size);
 	struct qbe_value cmpres = mkqtmp(ctx, &qbe_word, ".%d");
 	if (expr->append.is_static) {
@@ -2867,7 +2870,7 @@ gen_expr_append_insert_with(struct gen_context *ctx,
 		item.type = valtype;
 		gen_expr_at(ctx, expr->append.value, item);
 
-		assert(valtype->array.length != SIZE_UNDEFINED);
+		assert(valtype->array.kind != ARR_UNBOUNDED);
 		struct qbe_value next = mkqtmp(ctx, ctx->arch.ptr, "next.%d");
 		struct qbe_value last = mkqtmp(ctx, ctx->arch.ptr, "last.%d");
 		struct qbe_value arlen = constl(valtype->array.length * mtype->size);
@@ -3170,7 +3173,7 @@ gen_expr_slice_at(struct gen_context *ctx,
 	struct qbe_value qlen_, qcap_, *qlen = &qlen_, *qcap = &qcap_;
 	if (srctype->storage == STORAGE_ARRAY) {
 		qbase = mkcopy(ctx, &object, ".%d");
-		if (srctype->array.length == SIZE_UNDEFINED) {
+		if (srctype->array.kind == ARR_UNBOUNDED) {
 			qcap = qlen = NULL;
 		} else {
 			*qcap = *qlen = constl(srctype->array.length);
@@ -3181,9 +3184,9 @@ gen_expr_slice_at(struct gen_context *ctx,
 	}
 	gen_subslice_info(ctx, expr, qlen, qcap, &qstart, NULL, &qnewlen, &qnewcap);
 
-	if (srctype->array.members->size != SIZE_UNDEFINED) {
+	if (list_get_members(srctype)->size != SIZE_UNDEFINED) {
 		struct qbe_value data = mkqtmp(ctx, ctx->arch.sz, ".%d");
-		struct qbe_value isz = constl(srctype->array.members->size);
+		struct qbe_value isz = constl(list_get_members(srctype)->size);
 		pushi(ctx->current, &data, Q_MUL, &qstart, &isz, NULL);
 		pushi(ctx->current, &qbase, Q_ADD, &qbase, &data, NULL);
 	}
@@ -3720,7 +3723,7 @@ gen_data_item(struct gen_context *ctx, const struct expression *expr,
 		item->sym = ident_to_sym(ctx->itbl, literal->object->ident);
 		if (type->storage == STORAGE_SLICE) {
 			item->offset = literal->slice.offset +
-				literal->slice.start * type->array.members->size;
+				literal->slice.start * type->slice.members->size;
 
 			item->next = xcalloc(1, sizeof(struct qbe_data_item));
 			item = item->next;
@@ -3792,7 +3795,7 @@ gen_data_item(struct gen_context *ctx, const struct expression *expr,
 		}
 		break;
 	case STORAGE_ARRAY:
-		assert(type->array.length != SIZE_UNDEFINED);
+		assert(type->array.kind != ARR_UNBOUNDED);
 		size_t n = type->array.length;
 		for (struct array_literal *c = literal->array;
 				c && n; c = c->next ? c->next : c, --n) {
@@ -3856,7 +3859,7 @@ gen_data_item(struct gen_context *ctx, const struct expression *expr,
 			item->type = QD_SYMOFFS;
 			item->sym = xstrdup(def->name);
 			item->offset =
-				literal->slice.start * type->array.members->size;
+				literal->slice.start * type->slice.members->size;
 		} else {
 			item->type = QD_VALUE;
 			item->value = constl(0);

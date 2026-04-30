@@ -157,7 +157,7 @@ aggregate_lookup(struct gen_context *ctx, const struct type *type)
 
 	switch (type->storage) {
 	case STORAGE_ARRAY:
-		if (type->array.length == SIZE_UNDEFINED) {
+		if (type->array.kind == ARR_UNBOUNDED) {
 			free(def);
 			return &qbe_long; // Special case
 		}

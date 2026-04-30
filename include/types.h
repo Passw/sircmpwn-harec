@@ -65,10 +65,20 @@ struct type_alias {
 	bool exported; // Used to make sure unexported aliases aren't emitted
 };
 
+enum array_kind {
+	ARR_BOUNDED,
+	ARR_UNBOUNDED,
+	ARR_EXPANDABLE,
+};
+
 struct type_array {
-	size_t length; // SIZE_UNDEFINED for [*] and slices
 	const struct type *members;
-	bool expandable;
+	uint64_t length; // SIZE_UNDEFINED if kind == ARR_UNBOUNDED
+	enum array_kind kind;
+};
+
+struct type_slice {
+	const struct type *members;
 };
 
 struct type_enum {
@@ -145,6 +155,7 @@ struct type {
 		struct type_flexible flexible;
 		struct type_func func;
 		struct type_pointer pointer;
+		struct type_slice slice;
 		struct type_struct_union struct_union;
 		struct type_tagged_union tagged;
 		struct type_tuple tuple;
@@ -159,6 +170,7 @@ const struct struct_field *type_get_field(struct context *ctx,
 	const struct type *type, const char *name);
 const struct type_tuple *type_get_value(
 	const struct type *type, uint64_t index);
+const struct type *list_get_members(const struct type *type);
 
 void tagged_append(struct type_tagged_union *tagged, const struct type *memb);
 struct type_tagged_union tagged_dup_tags(const struct type_tagged_union *tags);

@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -16,30 +17,29 @@ dim_from_type(const struct type *type)
 	return (struct dimensions){ .size = type->size, .align = type->align };
 }
 
-static size_t
-ast_array_len(struct context *ctx, const struct ast_type *atype)
+static uint64_t
+ast_array_len(struct context *ctx, const struct ast_expression *alength)
 {
 	// TODO: Maybe we should cache these
-	struct expression in, out;
-	if (atype->array.length == NULL) {
-		return SIZE_UNDEFINED;
-	}
-	check_expression(ctx, atype->array.length, &in, NULL);
-	if (!eval_expr(ctx, &in, &out)) {
-		error(ctx, atype->loc, NULL,
+	// TODO: propagate errors, to avoid spurious error messages
+	struct expression unevaled, length;
+	check_expression(ctx, alength, &unevaled, NULL);
+	if (!eval_expr(ctx, &unevaled, &length)) {
+		error(ctx, alength->loc, NULL,
 			"Cannot evaluate array length at compile time");
 		return SIZE_UNDEFINED;
 	}
-	if (!type_is_integer(ctx, out.result)) {
-		error(ctx, atype->loc, NULL, "Array length must be an integer");
+	if (!type_is_integer(ctx, length.result)) {
+		error(ctx, alength->loc, NULL,
+			"Array length must be an integer");
 		return SIZE_UNDEFINED;
 	}
-	if (type_is_signed(ctx, out.result) && out.literal.ival < 0) {
-		error(ctx, atype->loc, NULL,
+	if (type_is_signed(ctx, length.result) && length.literal.ival < 0) {
+		error(ctx, alength->loc, NULL,
 			"Array length must be non-negative");
 		return SIZE_UNDEFINED;
 	}
-	return (size_t)out.literal.uval;
+	return length.literal.uval;
 }
 
 const struct type *
@@ -742,7 +742,15 @@ type_init_from_atype(struct context *ctx,
 		type->align = obj->type->align;
 		break;
 	case STORAGE_ARRAY:
-		type->array.length = ast_array_len(ctx, atype);
+		// XXX: contextual arrays are fuckin weird and idk whats goin on
+		// with them
+		if (atype->array.length == NULL) {
+			type->array.kind = ARR_UNBOUNDED;
+			type->array.length = SIZE_UNDEFINED;
+		} else {
+			type->array.length =
+				ast_array_len(ctx, atype->array.length);
+		}
 		struct dimensions memb = {0};
 		if (size_only) {
 			memb = type_store_lookup_dimensions(ctx,
@@ -770,7 +778,7 @@ type_init_from_atype(struct context *ctx,
 		}
 
 		type->align = memb.align;
-		if (type->array.length == SIZE_UNDEFINED) {
+		if (type->array.kind == ARR_UNBOUNDED) {
 			type->size = SIZE_UNDEFINED;
 		} else {
 			type->size = memb.size * type->array.length;
@@ -857,25 +865,24 @@ type_init_from_atype(struct context *ctx,
 		if (size_only) {
 			break;
 		}
-		type->array.members = type_store_lookup_atype(ctx,
+		type->slice.members = type_store_lookup_atype(ctx,
 				atype->slice.members);
-		if (type->array.members->storage == STORAGE_INVALID) {
+		if (type->slice.members->storage == STORAGE_INVALID) {
 			*type = builtin_type_invalid;
 			return (struct dimensions){0};
 		}
-		if (type->array.members->size == 0) {
+		if (type->slice.members->size == 0) {
 			error(ctx, atype->loc, NULL,
 				"Type of size 0 is not a valid slice member");
 			*type = builtin_type_invalid;
 			return (struct dimensions){0};
 		}
-		if (type->array.members->storage == STORAGE_NEVER) {
+		if (type->slice.members->storage == STORAGE_NEVER) {
 			error(ctx, atype->loc, NULL,
 				"never is not a valid slice member");
 			*type = builtin_type_invalid;
 			return (struct dimensions){0};
 		}
-		type->array.length = SIZE_UNDEFINED;
 		break;
 	case STORAGE_STRUCT:
 	case STORAGE_UNION:
@@ -1014,7 +1021,7 @@ type_store_lookup_pointer(struct context *ctx, struct location loc,
 
 const struct type *
 type_store_lookup_array(struct context *ctx, struct location loc,
-	const struct type *members, size_t len, bool expandable)
+	const struct type *members, uint64_t len, enum array_kind kind)
 {
 	if (members->storage == STORAGE_INVALID) {
 		return &builtin_type_invalid;
@@ -1037,7 +1044,8 @@ type_store_lookup_array(struct context *ctx, struct location loc,
 	assert(members->align != 0);
 	assert(members->align != ALIGN_UNDEFINED);
 
-	size_t size = len == SIZE_UNDEFINED
+	assert((len == SIZE_UNDEFINED) == (kind == ARR_UNBOUNDED));
+	uint64_t size = len == SIZE_UNDEFINED
 		? SIZE_UNDEFINED : members->size * len;
 	if (len != 0 && len != SIZE_UNDEFINED
 			&& (size < members->size || size < len)) {
@@ -1050,8 +1058,7 @@ type_store_lookup_array(struct context *ctx, struct location loc,
 		.array = {
 			.members = members,
 			.length = len,
-			// TODO: Define expandable semantics better in spec
-			.expandable = expandable,
+			.kind = kind,
 		},
 		.size = size,
 		.align = members->align,
@@ -1077,10 +1084,7 @@ type_store_lookup_slice(struct context *ctx, struct location loc,
 
 	struct type slice = {
 		.storage = STORAGE_SLICE,
-		.array = {
-			.members = members,
-			.length = SIZE_UNDEFINED,
-		},
+		.slice.members = members,
 		.size = builtin_type_uintptr.size + 2 * builtin_type_size.size,
 		.align = builtin_type_uintptr.align,
 	};

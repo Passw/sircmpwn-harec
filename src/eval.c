@@ -646,7 +646,7 @@ eval_cast(struct context *ctx,
 		return true;
 	case STORAGE_ARRAY:
 		assert(from->storage == STORAGE_ARRAY);
-		if (from->array.expandable) {
+		if (from->array.kind == ARR_EXPANDABLE) {
 			eval_expand_array(ctx, from, to, &val, out);
 		} else {
 			out->literal = val.literal;
@@ -793,8 +793,8 @@ literal_default(struct context *ctx, struct expression *v)
 		v->literal.string.len = 0;
 		break;
 	case STORAGE_ARRAY:
-		assert(!t->array.expandable); // Invariant
-		if (t->array.length == SIZE_UNDEFINED) {
+		assert(t->array.kind != ARR_EXPANDABLE); // Invariant
+		if (t->array.kind == ARR_UNBOUNDED) {
 			return false;
 		}
 		struct array_literal **next = &v->literal.array;
