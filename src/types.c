@@ -728,7 +728,7 @@ tagged_select_subtype(struct context *ctx, const struct type *tagged,
 	const struct type *selected = NULL;
 	for (size_t i = 0; i < tagged->tagged.len; i++) {
 		const struct type *t = tagged->tagged.types[i];
-		if (t->id == subtype->id) {
+		if (t == subtype) {
 			return t;
 		}
 
@@ -742,7 +742,7 @@ tagged_select_subtype(struct context *ctx, const struct type *tagged,
 		for (size_t i = 0; i < tagged->tagged.len; i++) {
 			const struct type *tustripped =
 				strip_error(tagged->tagged.types[i]);
-			if (tustripped->id == stripped->id) {
+			if (tustripped == stripped) {
 				return tagged->tagged.types[i];
 			}
 		}
@@ -974,8 +974,7 @@ tagged_subset_compat(struct context *ctx, const struct type *superset, const str
 		while (super_i < superset->tagged.len) {
 			const struct type *sub_memb = subset->tagged.types[sub_i];
 			const struct type *super_memb = superset->tagged.types[super_i];
-			// XXX: Why do we use the ID here?
-			if (sub_memb->id == super_memb->id) {
+			if (sub_memb == super_memb) {
 				sub_i++;
 				super_i++;
 				break;

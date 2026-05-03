@@ -338,7 +338,7 @@ nested_tagged_offset(const struct type *tu, const struct type *target)
 			break;
 		}
 		tu = tu_memb;
-	} while (tu_memb->id != target->id && type_dealias(NULL, tu_memb)->id != target->id);
+	} while (tu_memb != target && type_dealias(NULL, tu_memb) != target);
 	return constl(offset);
 }
 
@@ -390,8 +390,7 @@ gen_nested_match_tests(struct gen_context *ctx, struct gen_value object,
 		// object, where we're testing for a type within that subset,
 		// move the pointer to this tagged union and continue looking
 		// for the relevant type ID there.
-		if (test->id != subtype->id
-				&& type_dealias(NULL, test)->id != subtype->id
+		if (test != subtype && type_dealias(NULL, test) != subtype
 				&& type_dealias(NULL, test)->storage == STORAGE_TAGGED) {
 			struct qbe_value offs =
 				compute_tagged_memb_offset(test);
@@ -401,7 +400,7 @@ gen_nested_match_tests(struct gen_context *ctx, struct gen_value object,
 		}
 
 		type = test;
-	} while (test->id != subtype->id && type_dealias(NULL, test)->id != subtype->id);
+	} while (test != subtype && type_dealias(NULL, test) != subtype);
 
 	pushi(ctx->current, NULL, Q_JMP, &bmatch, NULL);
 	return match;

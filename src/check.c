@@ -524,9 +524,7 @@ check_expr_alloc_init(struct context *ctx,
 			objtype = promoted;
 		}
 	} else if (inithint) {
-		uint32_t objtype_id = type_dealias(ctx, objtype)->id;
-		uint32_t inithint_id = type_dealias(ctx, inithint)->id;
-		if (objtype_id == inithint_id) {
+		if (type_dealias(ctx, objtype) == type_dealias(ctx, inithint)) {
 			objtype = inithint;
 		}
 	}
