@@ -1575,7 +1575,7 @@ check_expr_call(struct context *ctx,
 		return;
 	}
 	if (fntype->func.variadism != VARIADISM_HARE && aexpr->call.variadic) {
-		error(ctx, aexpr->loc, expr,
+		error(ctx, aexpr->loc, NULL,
 			"Function type does not permit variadic argument list");
 	}
 	expr->result = fntype->func.result;
@@ -1607,7 +1607,7 @@ check_expr_call(struct context *ctx,
 		if (!type_is_assignable(ctx, param->type, arg->value->result)) {
 			char *argtypename = gen_typename(arg->value->result);
 			char *paramtypename = gen_typename(param->type);
-			error(ctx, val.loc, expr,
+			error(ctx, val.loc, NULL,
 				"Argument type %s is not assignable to parameter type %s",
 				argtypename, paramtypename);
 			free(argtypename);
@@ -1645,13 +1645,13 @@ check_expr_call(struct context *ctx,
 			};
 			return;
 		} else if (param->default_value == NULL) {
-			error(ctx, aexpr->loc, expr,
+			error(ctx, aexpr->loc, NULL,
 				"Not enough arguments for function call");
 			return;
 		}
 	} else if (aarg) {
 		if (fntype->func.variadism != VARIADISM_C) {
-			error(ctx, aexpr->loc, expr,
+			error(ctx, aexpr->loc, NULL,
 				"Too many arguments for function call");
 			return;
 		}
