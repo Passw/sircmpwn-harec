@@ -3613,7 +3613,7 @@ gen_function_decl(struct gen_context *ctx, const struct declaration *decl)
 		init->kind = Q_DATA;
 		init->exported = false;
 		init->data.align = 8;
-		init->data.section = ".init_array";
+		init->data.section = ".data.hare_init_array";
 		init->data.secflags = NULL;
 
 		size_t n = snprintf(NULL, 0, ".init.%s", qdef->name);
@@ -3640,7 +3640,7 @@ gen_function_decl(struct gen_context *ctx, const struct declaration *decl)
 		fini->kind = Q_DATA;
 		fini->exported = false;
 		fini->data.align = 8;
-		fini->data.section = ".fini_array";
+		fini->data.section = ".data.hare_fini_array";
 		fini->data.secflags = NULL;
 
 		size_t n = snprintf(NULL, 0, ".fini.%s", qdef->name);
@@ -3667,7 +3667,7 @@ gen_function_decl(struct gen_context *ctx, const struct declaration *decl)
 		test->kind = Q_DATA;
 		test->exported = false;
 		test->data.align = 8;
-		test->data.section = ".test_array";
+		test->data.section = ".data.hare_test_array";
 		test->data.secflags = "aw";
 
 		size_t n = snprintf(NULL, 0, ".test.%s", qdef->name);

@@ -1,5 +1,3 @@
-RTSCRIPT = rt/hare.sc
-
 _rt_ha = \
 	rt/malloc.ha \
 	rt/+$(PLATFORM)/syscallno+$(ARCH).ha \

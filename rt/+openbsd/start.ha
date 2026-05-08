@@ -8,9 +8,11 @@ let envp: *[*]nullable *const u8 = null: *[*]nullable *const u8;
 // The real main function.
 @symbol(".main") fn main() void;
 
-// The setup of envp and args is done here. This is called by crt0 before
-// normal init functions are called.
-export @symbol("preinit_hare") fn preinit_hare(
+// The purpose of this "fake" main function is to make sure we exit with the
+// correct exit code in the case that rt::exit() is not called from within the
+// program. The intialization and finalization functions are not run from here,
+// they are ran by crt0.
+export @symbol("main") fn _main(
 	c_argc: int,
 	c_argv: *[*]*const u8,
 	c_envp: *[*]nullable *const u8
@@ -18,13 +20,9 @@ export @symbol("preinit_hare") fn preinit_hare(
 	argc = c_argc: size;
 	argv = c_argv;
 	envp = c_envp;
-};
 
-// The purpose of this "fake" main function is to make sure we exit with the
-// correct exit code in the case that rt::exit() is not called from within the
-// program. The intialization and finalization functions are not run from here,
-// they are ran by crt0.
-export @symbol("main") fn _main() void = {
+	init();
 	main();
+	fini();
 	exit(0);
 };
