@@ -147,7 +147,7 @@ struct_union_has_field(struct context *ctx,
 }
 
 static void
-add_padding(size_t *size, size_t align)
+add_padding(uint64_t *size, uint8_t align)
 {
 	if (*size != SIZE_UNDEFINED && *size != 0 && *size % align != 0) {
 		*size += align - *size % align;

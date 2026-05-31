@@ -48,13 +48,13 @@ qemit_type(const struct qbe_def *def, FILE *out)
 		xfprintf(out, "# %s [id: %" PRIu32 "; size: ", tn, base->id);
 		free(tn);
 		if (base->size != SIZE_UNDEFINED) {
-			xfprintf(out, "%zu]\n", base->size);
+			xfprintf(out, "%" PRIu64 "]\n", base->size);
 		} else {
 			xfprintf(out, "undefined]\n");
 		}
 		xfprintf(out, "type :%s =", def->name);
 		if (base->align != ALIGN_UNDEFINED) {
-			xfprintf(out, " align %zu", base->align);
+			xfprintf(out, " align %" PRIu8, base->align);
 		}
 	} else {
 		xfprintf(out, "type :%s =", def->name);
@@ -326,7 +326,7 @@ emit_data(const struct qbe_def *def, FILE *out)
 	xfprintf(out, "%s\ndata $%s = ", def->exported ? " export" : "",
 			def->name);
 	if (def->data.align != ALIGN_UNDEFINED) {
-		xfprintf(out, "align %zu ", def->data.align);
+		xfprintf(out, "align %" PRIu8 " ", def->data.align);
 	}
 	xfprintf(out, "{ ");
 

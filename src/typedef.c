@@ -449,13 +449,13 @@ emit_decl_type(const struct declaration *decl, FILE *out)
 	if (decl->type->size == SIZE_UNDEFINED) {
 		xfprintf(out, "undefined");
 	} else {
-		xfprintf(out, "%zu", decl->type->size);
+		xfprintf(out, "%" PRIu64, decl->type->size);
 	}
 	xfprintf(out, ", align: ");
 	if (decl->type->align == ALIGN_UNDEFINED) {
 		xfprintf(out, "undefined");
 	} else {
-		xfprintf(out, "%zu", decl->type->align);
+		xfprintf(out, "%" PRIu8, decl->type->align);
 	}
 	xfprintf(out, ", id: %" PRIu32 "\n", decl->type->id);
 	free(ident);

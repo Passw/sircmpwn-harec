@@ -1,5 +1,6 @@
 #ifndef HARE_TYPESTORE_H
 #define HARE_TYPESTORE_H
+#include <stdint.h>
 #include "ast.h"
 #include "lex.h"
 #include "types.h"
@@ -14,8 +15,8 @@ struct type_bucket {
 struct context;
 
 struct dimensions {
-	size_t size;
-	size_t align;
+	uint64_t size;
+	uint8_t align;
 };
 
 typedef struct type_bucket *type_store[TYPE_STORE_BUCKETS];

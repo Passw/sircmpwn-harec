@@ -55,8 +55,8 @@ enum type_storage {
 struct context;
 struct type;
 
-#define SIZE_UNDEFINED ((size_t)-1)
-#define ALIGN_UNDEFINED ((size_t)-1)
+#define SIZE_UNDEFINED ((uint64_t)~0)
+#define ALIGN_UNDEFINED ((uint8_t)~0)
 
 struct type_alias {
 	struct ident *ident;
@@ -119,8 +119,8 @@ struct type_pointer {
 struct struct_field {
 	const char *name;
 	const struct type *type;
-	size_t offset;
-	size_t size;
+	uint64_t offset;
+	uint64_t size;
 	struct struct_field *next;
 };
 
@@ -144,7 +144,8 @@ struct type_tagged_union {
 struct type {
 	enum type_storage storage;
 	uint32_t id;
-	size_t size, align;
+	uint64_t size;
+	uint8_t align;
 	union {
 		struct {
 			struct type_alias alias;
