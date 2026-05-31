@@ -1729,7 +1729,7 @@ check_expr_array_literal(struct context *ctx,
 	struct expression *expr,
 	const struct type *hint)
 {
-	size_t len = 0;
+	uint64_t len = 0;
 	struct ast_expression_list *item = aexpr->literal.array.exprs;
 	struct array_literal *cur, **next = &expr->literal.array;
 	const struct type *type = NULL;
@@ -3235,7 +3235,7 @@ casecmp(const void *_a, const void *_b)
 	}
 }
 
-static size_t
+static uint64_t
 num_cases(struct context *ctx, const struct type *type)
 {
 	type = type_dealias(ctx, type);
@@ -3247,7 +3247,7 @@ num_cases(struct context *ctx, const struct type *type)
 	case STORAGE_ENUM:;
 		struct scope_object *obj = type->_enum.values->objects;
 		assert(obj != NULL);
-		size_t n = 0;
+		uint64_t n = 0;
 		for (struct scope_object *o = obj; o; o = o->lnext, ++n) {
 			if (o->otype == O_SCAN) {
 				wrap_resolver(ctx, o, resolve_enum_field);
@@ -3261,7 +3261,7 @@ num_cases(struct context *ctx, const struct type *type)
 			cases_array[i] = o->value;
 		}
 		qsort(cases_array, n, sizeof(struct expression *), &casecmp);
-		for (size_t i = 1, sz = n; i < sz; ++i) {
+		for (uint64_t i = 1, sz = n; i < sz; ++i) {
 			if (casecmp(&cases_array[i - 1], &cases_array[i]) == 0) {
 				--n;
 			}
@@ -3272,10 +3272,10 @@ num_cases(struct context *ctx, const struct type *type)
 		assert(type_is_integer(ctx, type)
 			|| type->storage == STORAGE_RUNE);
 		assert(!type_is_flexible(type));
-		if (type->size >= sizeof(size_t)) {
+		if (type->size >= sizeof(uint64_t)) {
 			return -1;
 		}
-		return (size_t)1 << (type->size * 8);
+		return UINT64_C(1) << (type->size * 8);
 	}
 }
 
@@ -3304,7 +3304,7 @@ check_expr_switch(struct context *ctx,
 	struct type_tagged_union tagged = { .types = NULL };
 
 	struct switch_case **next = &expr->_switch.cases, *_case = NULL;
-	size_t n = 0;
+	uint64_t n = 0;
 	bool has_default_case = false;
 	struct ast_switch_case *acase;
 	for (acase = aexpr->_switch.cases; acase; acase = acase->next) {
@@ -3368,7 +3368,7 @@ check_expr_switch(struct context *ctx,
 	}
 
 	struct expression **cases_array = xcalloc(n, sizeof(struct expression *));
-	size_t i = 0;
+	uint64_t i = 0;
 	for (_case = expr->_switch.cases; _case; _case = _case->next) {
 		for (const struct case_option *opt = _case->options;
 				opt; opt = opt->next) {
@@ -3392,7 +3392,7 @@ check_expr_switch(struct context *ctx,
 	free(cases_array);
 	if (!has_default_case && !has_duplicate
 			&& value->result->storage != STORAGE_INVALID
-			&& (n == (size_t)-1 || n != num_cases(ctx, value->result))) {
+			&& (n == (uint64_t)-1 || n != num_cases(ctx, value->result))) {
 		error(ctx, aexpr->loc, value,
 			"Switch expression isn't exhaustive");
 	}

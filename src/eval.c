@@ -28,7 +28,7 @@ eval_access(struct context *ctx,
 		if (!eval_expr(ctx, in->access.index, &tmp)) {
 			return false;
 		}
-		for (size_t i = tmp.literal.uval; i > 0; --i) {
+		for (uint64_t i = tmp.literal.uval; i > 0; --i) {
 			if (array == NULL) {
 				error(ctx, in->loc, NULL,
 					"slice or array access out of bounds");
@@ -56,7 +56,7 @@ eval_access(struct context *ctx,
 			return false;
 		}
 		const struct tuple_literal *tuple = tmp.literal.tuple;
-		for (size_t i = in->access.tindex; i > 0; --i) {
+		for (uint64_t i = in->access.tindex; i > 0; --i) {
 			if (tuple == NULL) {
 				// out of bounds
 				return false;
@@ -521,7 +521,7 @@ eval_expand_array(struct context *ctx,
 	assert(outtype->storage == STORAGE_ARRAY);
 	struct array_literal *array_in = in->literal.array;
 	struct array_literal **next = &out->literal.array;
-	for (size_t i = 0; i < outtype->array.length; i++) {
+	for (uint64_t i = 0; i < outtype->array.length; i++) {
 		struct array_literal *item = *next =
 			xcalloc(1, sizeof(struct array_literal));
 		item->value = array_in->value;
@@ -798,7 +798,7 @@ literal_default(struct context *ctx, struct expression *v)
 			return false;
 		}
 		struct array_literal **next = &v->literal.array;
-		for (size_t i = 0; i < t->array.length; i++) {
+		for (uint64_t i = 0; i < t->array.length; i++) {
 			*next = xcalloc(1, sizeof(struct array_literal));
 			(*next)->value = xcalloc(1, sizeof(struct expression));
 			(*next)->value->type = EXPR_LITERAL;
@@ -981,7 +981,7 @@ eval_slice(struct context *ctx,
 		return false;
 	}
 
-	size_t start = 0;
+	uint64_t start = 0;
 	if (in->slice.start) {
 		struct expression start_expr = {0};
 		if (!eval_expr(ctx, in->slice.start, &start_expr)) {
@@ -990,7 +990,7 @@ eval_slice(struct context *ctx,
 		start = start_expr.literal.uval;
 	}
 
-	size_t end;
+	uint64_t end;
 	if (object_type->storage == STORAGE_ARRAY) {
 		end = object_type->array.length;
 	} else {

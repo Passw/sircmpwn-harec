@@ -315,7 +315,7 @@ struct_init_from_atype(struct context *ctx, struct type *type,
 	struct struct_field **next = &type->struct_union.fields;
 	for (const struct ast_struct_union_field *afield = &atype->struct_union.fields;
 			afield; afield = afield->next) {
-		size_t offset = type->size;
+		uint64_t offset = type->size;
 		struct struct_field *field =
 			struct_new_field(ctx, type, afield, size_only);
 		if (field == NULL) {
@@ -357,8 +357,8 @@ size_with_tag(struct dimensions *out, struct dimensions new)
 	}
 	assert(new.align != ALIGN_UNDEFINED && out->align != ALIGN_UNDEFINED);
 
-	size_t sz = new.size + builtin_type_u32.size;
-	size_t align = new.align;
+	uint64_t sz = new.size + builtin_type_u32.size;
+	uint8_t align = new.align;
 	if (align < builtin_type_u32.align) {
 		align = builtin_type_u32.align;
 	}
@@ -466,7 +466,7 @@ tagged_init(struct context *ctx, struct type *type,
 	}
 
 	struct dimensions dims = {0};
-	size_t maxsize = 0;
+	uint64_t maxsize = 0;
 	for (size_t i = 0; i < type->tagged.len; i++) {
 		if (membs[i]->size != SIZE_UNDEFINED && membs[i]->size > maxsize) {
 			maxsize = membs[i]->size;
@@ -556,7 +556,7 @@ tuple_init_from_atype(struct context *ctx,
 			}
 			return (struct dimensions){0};
 		}
-		size_t offset = dim.size;
+		uint64_t offset = dim.size;
 		if (memb.align != 0) {
 			add_padding(&offset, memb.align);
 		}
@@ -891,7 +891,7 @@ type_init_from_atype(struct context *ctx,
 			return (struct dimensions){0};
 		}
 		if (type->storage == STORAGE_UNION || !type->struct_union.packed) {
-			size_t oldsize = type->size;
+			uint64_t oldsize = type->size;
 			add_padding(&type->size, type->align);
 			if (type->size < oldsize) {
 				error(ctx, atype->loc, NULL, "Type is too big");
@@ -919,7 +919,7 @@ type_init_from_atype(struct context *ctx,
 		} else {
 			tuple_init_from_atype(ctx, type, atype);
 		}
-		size_t oldsize = type->size;
+		uint64_t oldsize = type->size;
 		add_padding(&type->size, type->align);
 		if (type->size < oldsize) {
 			error(ctx, atype->loc, NULL, "Type is too big");
@@ -1170,7 +1170,7 @@ type_store_lookup_tuple(struct context *ctx, struct location loc,
 	}
 	type.tuple = *values;
 
-	size_t oldsize = type.size;
+	uint64_t oldsize = type.size;
 	add_padding(&type.size, type.align);
 	if (type.size < oldsize) {
 		error(ctx, loc, NULL, "Type is too big");

@@ -98,7 +98,7 @@ struct qbe_value mklabel(struct gen_context *ctx,
 struct qbe_value compute_tagged_memb_offset(const struct type *subtype);
 
 // qinstr.c
-enum qbe_instr alloc_for_align(size_t align);
+enum qbe_instr alloc_for_align(uint8_t align);
 enum qbe_instr store_for_type(struct gen_context *ctx, const struct type *type);
 enum qbe_instr load_for_type(struct gen_context *ctx, const struct type *type);
 enum qbe_instr binarithm_for_op(struct gen_context *ctx,

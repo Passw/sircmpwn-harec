@@ -5,7 +5,7 @@
 #include "types.h"
 
 enum qbe_instr
-alloc_for_align(size_t align)
+alloc_for_align(uint8_t align)
 {
 	switch (align) {
 	case 1:

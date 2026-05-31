@@ -131,7 +131,7 @@ struct type_struct_union {
 
 struct type_tuple {
 	const struct type *type;
-	size_t offset;
+	uint64_t offset;
 	struct type_tuple *next;
 };
 

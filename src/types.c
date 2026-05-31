@@ -772,7 +772,7 @@ static uint64_t
 max_value(struct context *ctx, const struct type *t)
 {
 	assert(type_is_integer(ctx, t));
-	size_t bits = t->size * 8;
+	uint64_t bits = t->size * 8;
 	if (type_is_signed(ctx, t)) {
 		bits--;
 	}

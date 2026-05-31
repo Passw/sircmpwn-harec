@@ -73,7 +73,7 @@ struct expression_access {
 		struct {
 			struct expression *tuple;
 			const struct type_tuple *tvalue;
-			size_t tindex;
+			uint64_t tindex;
 		};
 	};
 };
@@ -149,7 +149,7 @@ struct expression_binarithm {
 
 struct binding_unpack {
 	const struct scope_object *object;
-	size_t offset;
+	uint64_t offset;
 	struct binding_unpack *next;
 };
 

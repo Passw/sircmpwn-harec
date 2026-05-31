@@ -1084,8 +1084,8 @@ gen_expr_assign_slice_expandable(struct gen_context *ctx, struct qbe_value obase
 		struct qbe_value ostart, struct qbe_value olen,
 		const struct expression *rvalue)
 {
-	size_t arrlen = rvalue->result->array.length;
-	size_t membsz = rvalue->result->array.members->size;
+	uint64_t arrlen = rvalue->result->array.length;
+	uint64_t membsz = rvalue->result->array.members->size;
 	struct qbe_value cmplen = constl(arrlen);
 	gen_fixed_assert(ctx, rvalue->loc, ABORT_OOB, Q_CULEL, &cmplen, &olen);
 
@@ -1677,7 +1677,7 @@ gen_expr_cast_array_at(struct gen_context *ctx,
 	assert(typeout->array.length >= typein->array.length);
 
 	const struct type *membtype = typein->array.members;
-	size_t remain = typeout->array.length - typein->array.length;
+	uint64_t remain = typeout->array.length - typein->array.length;
 
 	struct qbe_value base = mkqval(ctx, &out);
 	struct qbe_value offs = constl((typein->array.length - 1) * membtype->size);
@@ -1689,7 +1689,7 @@ gen_expr_cast_array_at(struct gen_context *ctx,
 
 	if (remain * membtype->size <= 128) {
 		struct gen_value last = gen_load(ctx, item);
-		for (size_t n = typein->array.length; n < typeout->array.length; ++n) {
+		for (uint64_t n = typein->array.length; n < typeout->array.length; ++n) {
 			struct qbe_value offs = constl(n * membtype->size);
 			pushi(ctx->current, &ptr, Q_ADD, &base, &offs, NULL);
 			gen_store(ctx, next, last);
@@ -2078,9 +2078,9 @@ gen_literal_array_at(struct gen_context *ctx,
 	struct array_literal *aexpr = expr->literal.array;
 	struct qbe_value base = mkqval(ctx, &out);
 
-	size_t n = 0;
+	uint64_t n = 0;
 	const struct type *atype = type_dealias(NULL, expr->result);
-	size_t msize = atype->array.members->size;
+	uint64_t msize = atype->array.members->size;
 	struct gen_value item = mkgtemp(ctx, atype->array.members, "item.%d");
 	struct qbe_value ptr;
 	for (const struct array_literal *ac = aexpr; ac; ac = ac->next) {
@@ -2121,7 +2121,7 @@ gen_literal_slice_at(struct gen_context *ctx,
 		struct expression *first = aexpr->value;
 		obj = mkqtmp(ctx, ctx->arch.ptr, "object.%d");
 
-		size_t n = 0;
+		uint64_t n = 0;
 		struct gen_value item = mkgtemp(ctx, first->result, "item.%d");
 		struct qbe_value ptr;
 		for (const struct array_literal *ac = aexpr; ac; ac = ac->next) {
@@ -2149,7 +2149,7 @@ gen_literal_slice_at(struct gen_context *ctx,
 		struct qbe_value tmp = mkqval(ctx, &gobj);
 		const struct type *otype =
 			sobj->otype == O_CONST ? sobj->value->result : sobj->type;
-		size_t offs = expr->literal.slice.offset;
+		uint64_t offs = expr->literal.slice.offset;
 		offs += expr->literal.slice.start * otype->size;
 		struct qbe_value qoffs = constl(offs);
 		obj = mkqtmp(ctx, ctx->arch.ptr, "object.%d");
@@ -3795,7 +3795,7 @@ gen_data_item(struct gen_context *ctx, const struct expression *expr,
 		break;
 	case STORAGE_ARRAY:
 		assert(type->array.kind != ARR_UNBOUNDED);
-		size_t n = type->array.length;
+		uint64_t n = type->array.length;
 		for (struct array_literal *c = literal->array;
 				c && n; c = c->next ? c->next : c, --n) {
 			item = gen_data_item(ctx, c->value, item);
@@ -3950,8 +3950,8 @@ gen_data_item(struct gen_context *ctx, const struct expression *expr,
 	case STORAGE_TAGGED:
 		item->type = QD_VALUE;
 		item->value = constw((uint32_t)literal->tagged.tag->id);
-		size_t offs = builtin_type_u32.size;
-		size_t tag_align = literal->tagged.tag->align;
+		uint64_t offs = builtin_type_u32.size;
+		uint8_t tag_align = literal->tagged.tag->align;
 		if (tag_align > offs) {
 			item->next = xcalloc(1, sizeof(struct qbe_data_item));
 			item = item->next;

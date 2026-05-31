@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include "gen.h"
@@ -14,7 +15,7 @@ tagged_qtype(struct gen_context *ctx,
 	def->type.stype = Q__UNION;
 
 	// Identify maximum alignment among members
-	size_t maxalign = 0, minalign = SIZE_MAX;
+	uint8_t maxalign = 0, minalign = ~0;
 	for (size_t i = 0; i < type->tagged.len; i++) {
 		const struct type *t = type->tagged.types[i];
 		if (maxalign < t->align) {
@@ -27,7 +28,7 @@ tagged_qtype(struct gen_context *ctx,
 
 	// Create union members for each batch of alignments
 	struct qbe_field *field = &def->type.fields;
-	for (size_t align = 1; align <= 8; align <<= 1) {
+	for (uint8_t align = 1; align <= 8; align <<= 1) {
 		size_t nalign = 0;
 		for (size_t i = 0; i < type->tagged.len; i++) {
 			const struct type *t = type->tagged.types[i];

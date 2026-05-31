@@ -28,7 +28,7 @@ struct qbe_field {
 struct qbe_type {
 	enum qbe_stype stype;
 	bool sgn; // for sub-word types
-	size_t size;
+	uint64_t size;
 
 	// Aggregate types only:
 	char *name;
