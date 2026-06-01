@@ -1,4 +1,5 @@
 use rt::{compile, exit, status};
+use testmod;
 
 fn simple() int = return 69;
 
@@ -237,6 +238,7 @@ type optional_zero_tu = (*fn(x: f64 = 0.0) void | *fn(x: f64 = -0.0) void);
 fn optional_nan(x: f64 = 0.0 / 0.0) void = void;
 let optional_nan_p: *fn(x: f64 = 0.0 / 0.0) void = &optional_nan;
 let optional_nan_p2: *fn(x: f64 = -(0.0 / 0.0)) void = &optional_nan;
+fn testmod_assignable_func(x: int = 67) void = assert(x == 67);
 
 fn optional_params() void = {
 	assert(optional_simple(5, 1) == 1);
@@ -270,6 +272,13 @@ fn optional_params() void = {
 	optional_variadic_c(0);
 	optional_variadic_c(1, 0);
 	optional_variadic_c(3, 0, 1, 2);
+
+	// ensure default argument is emitted in typedef
+	let f: *testmod::func_type = &testmod_assignable_func;
+	f();
+	f(67);
+	testmod::func();
+	testmod::func(67);
 };
 
 export fn main() void = {

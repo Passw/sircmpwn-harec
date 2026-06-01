@@ -171,12 +171,12 @@ $(HARECACHE)/tests_08_slices.ssa: $(tests_08_slices_ha) $(HARECACHE)/rt.td $(BIN
 	@$(TDENV) $(BINOUT)/harec $(HARECFLAGS) -o $@ $(tests_08_slices_ha)
 
 
-tests/09-funcs: $(HARECACHE)/rt.o $(HARECACHE)/tests_09_funcs.o
+tests/09-funcs: $(HARECACHE)/rt.o $(HARECACHE)/testmod.o $(HARECACHE)/tests_09_funcs.o
 	@printf 'LD\t%s\t\n' '$@'
-	@$(LD) $(LDLINKFLAGS) -T rt/hare.sc -o $@ $(HARECACHE)/rt.o $(HARECACHE)/tests_09_funcs.o
+	@$(LD) $(LDLINKFLAGS) -T rt/hare.sc -o $@ $(HARECACHE)/rt.o $(HARECACHE)/testmod.o $(HARECACHE)/tests_09_funcs.o
 
 tests_09_funcs_ha = tests/09-funcs.ha
-$(HARECACHE)/tests_09_funcs.ssa: $(tests_09_funcs_ha) $(HARECACHE)/rt.td $(BINOUT)/harec
+$(HARECACHE)/tests_09_funcs.ssa: $(tests_09_funcs_ha) $(HARECACHE)/rt.td $(HARECACHE)/testmod.td $(BINOUT)/harec
 	@mkdir -p -- $(HARECACHE)
 	@printf 'HAREC\t%s\n' '$@'
 	@$(TDENV) $(BINOUT)/harec $(HARECFLAGS) -o $@ $(tests_09_funcs_ha)

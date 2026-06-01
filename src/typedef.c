@@ -213,6 +213,39 @@ emit_literal(const struct expression *expr, FILE *out)
 }
 
 static void
+emit_prototype(const struct type_func *func, FILE *out)
+{
+	xfprintf(out, "(");
+	for (const struct type_func_param *param = func->params;
+			param != NULL; param = param->next) {
+		xfprintf(out, "_: ");
+
+		if (param->next == NULL && func->variadism == VARIADISM_HARE) {
+			emit_type(param->type->slice.members, out);
+		} else {
+			emit_type(param->type, out);
+		}
+
+		if (param->default_value != NULL) {
+			xfprintf(out, " = ");
+			emit_literal(param->default_value, out);
+		}
+
+		if (param->next != NULL) {
+			xfprintf(out, ", ");
+		}
+	}
+
+	if (func->variadism == VARIADISM_HARE) {
+		xfprintf(out, "...");
+	} else if (func->variadism == VARIADISM_C) {
+		xfprintf(out, ", ...");
+	}
+	xfprintf(out, ") ");
+	emit_type(func->result, out);
+}
+
+static void
 emit_struct(const struct type *type, FILE *out)
 {
 	xfprintf(out, "%s %s{ ",
@@ -303,25 +336,8 @@ emit_type(const struct type *type, FILE *out)
 		emit_struct(type, out);
 		break;
 	case STORAGE_FUNCTION:
-		xfprintf(out, "fn(");
-		for (const struct type_func_param *param = type->func.params;
-				param; param = param->next) {
-			xfprintf(out, "_: ");
-			if (param->next) {
-				emit_type(param->type, out);
-				xfprintf(out, ", ");
-			} else if (type->func.variadism == VARIADISM_HARE) {
-				emit_type(param->type->slice.members, out);
-				xfprintf(out, "...");
-			} else if (type->func.variadism == VARIADISM_C) {
-				emit_type(param->type, out);
-				xfprintf(out, ", ...");
-			} else {
-				emit_type(param->type, out);
-			}
-		}
-		xfprintf(out, ") ");
-		emit_type(type->func.result, out);
+		xfprintf(out, "fn");
+		emit_prototype(&type->func, out);
 		break;
 	case STORAGE_ENUM:
 		ident = ident_unparse(type->alias.ident);
@@ -372,35 +388,8 @@ emit_decl_func(const struct declaration *decl, FILE *out)
 	if (decl->symbol) {
 		xfprintf(out, "@symbol(\"%s\") ", decl->symbol);
 	}
-	xfprintf(out, "fn %s(", ident);
-
-	for (const struct type_func_param *param = fntype->func.params;
-			param; param = param->next) {
-		xfprintf(out, "_: ");
-		if (param->next) {
-			emit_type(param->type, out);
-			if (param->default_value) {
-				xfprintf(out, " = ");
-				emit_literal(param->default_value, out);
-			}
-			xfprintf(out, ", ");
-		} else if (fntype->func.variadism == VARIADISM_HARE) {
-			emit_type(param->type->slice.members, out);
-			xfprintf(out, "...");
-		} else if (fntype->func.variadism == VARIADISM_C) {
-			emit_type(param->type, out);
-			xfprintf(out, ", ...");
-		} else {
-			emit_type(param->type, out);
-			if (param->default_value) {
-				xfprintf(out, " = ");
-				emit_literal(param->default_value, out);
-			}
-		}
-	}
-
-	xfprintf(out, ") ");
-	emit_type(fntype->func.result, out);
+	xfprintf(out, "fn %s", ident);
+	emit_prototype(&fntype->func, out);
 	xfprintf(out, ";\n");
 	free(ident);
 }

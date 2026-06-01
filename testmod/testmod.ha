@@ -45,6 +45,11 @@ static assert(SIZE_RT_SLICE == size([]opaque));
 // ensure this produces valid code in a typedef
 export def ptr: *int = null: *int;
 
+// emit default arguments in function types in typedefs
+export type func_type = fn(_: int = 67) void;
+fn _func(x: int = 67) void = assert(x == 67);
+export let func: *func_type = &_func;
+
 // used for a test in tests/06-structs.ha
 export type padding_embed = struct {
 	_: u32,
