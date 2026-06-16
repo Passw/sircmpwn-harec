@@ -563,6 +563,18 @@ export type embedded_underscores = struct {
 
 type packed_is_distinct = (struct { x: u8, y: u8 } | struct @packed { x: u8, y: u8 });
 
+type packed_struct = struct @packed {
+	x: u8,
+	y: u64,
+};
+
+fn packed() void = {
+	const p = packed_struct { ... };
+	assert(offset(p.x) == 0);
+	assert(offset(p.y) == 1);
+	assert(align(packed_struct) == 1);
+};
+
 export fn main() void = {
 	padding();
 	storage();
@@ -576,5 +588,6 @@ export fn main() void = {
 	fields();
 	eval();
 	rt_siginfo();
+	packed();
 	// TODO: more union tests
 };

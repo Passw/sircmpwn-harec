@@ -97,6 +97,54 @@ fn for_each1() (int | void) = for (true) void;
 fn for_each2() (int | void) = for (false) void;
 fn for_each3() (int | void) = for (false) void else void;
 
+// Minimal reproduction of an error found in hare-ext2
+export type inode = struct @packed {
+	mode: u16,
+	uid: u16,
+	sz: u32,
+	atime: u32,
+	ctime: u32,
+	mtime: u32,
+	// Deletion time
+	dtime: u32,
+	gid: u16,
+	nlink: u16,
+	nblock_phys: u32,
+	flags: u32,
+	vendor_1: u32,
+	blocks: [15]u32,
+	generation: u32,
+	exattr_blk: u32,
+	union {
+		sz_hi: u32,
+		dir_acl_blk: u32,
+	},
+	frag_blk: u32,
+	vendor_2: union {
+		linux: struct @packed {
+			frag_no: u8,
+			frag_sz: u8,
+			resv_1: u16,
+			uid_hi: u16,
+			gid_hi: u16,
+			resv_2: u64,
+		},
+		hurd: struct @packed {
+			frag_no: u8,
+			frag_sz: u8,
+			mode_hi: u16,
+			uid_hi: u16,
+			gid_hi: u16,
+			author: u64,
+		},
+		reserved: [12]u8,
+	},
+};
+export type errio = !void;
+export type errunsupported = !void;
+export type ext2_error = !(errio | errunsupported);
+static assert(size((inode | ext2_error)) == 136);
+
 export fn main() void = {
 	let t = thing {
 		offs = 0,

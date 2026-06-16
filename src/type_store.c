@@ -344,6 +344,12 @@ struct_init_from_atype(struct context *ctx, struct type *type,
 		*next = field;
 		next = &field->next;
 	}
+
+	if (type->struct_union.packed
+			&& (type->align > 1 || type->align == ALIGN_UNDEFINED)) {
+		type->align = 1;
+	}
+
 	return true;
 }
 
