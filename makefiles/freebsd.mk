@@ -4,5 +4,6 @@ _rt_ha = \
 	rt/+$(PLATFORM)/segmalloc.ha
 
 _rt_s = \
+	rt/+$(PLATFORM)/brand.s \
 	rt/+$(PLATFORM)/start+$(ARCH).s \
 	rt/+$(PLATFORM)/syscall+$(ARCH).s
