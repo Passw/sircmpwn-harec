@@ -2746,22 +2746,24 @@ gen_expr_if_let_with(struct gen_context *ctx,
 	struct gen_value object = gen_expr(ctx, expr->_if.initializer);
 	begin_gen_match(ctx, &mctx, object);
 
-	const struct scope_object *obj = expr->_if.object;
-	struct gen_value value = gen_match_test(&mctx,
-		obj->type, NULL, &bfalse);
+	if (expr->_if.object != NULL) {
+		const struct scope_object *obj = expr->_if.object;
+		struct gen_value value = gen_match_test(&mctx,
+			obj->type, NULL, &bfalse);
 
-	struct gen_binding *gb = xcalloc(1, sizeof(struct gen_binding));
-	gb->value = mkgtemp(ctx, obj->type, "binding.%d");
-	gb->object = obj;
-	gb->next = ctx->bindings;
-	ctx->bindings = gb;
+		struct gen_binding *gb = xcalloc(1, sizeof(struct gen_binding));
+		gb->value = mkgtemp(ctx, obj->type, "binding.%d");
+		gb->object = obj;
+		gb->next = ctx->bindings;
+		ctx->bindings = gb;
 
-	struct qbe_value qv = mklval(ctx, &gb->value);
-	enum qbe_instr alloc = alloc_for_align(obj->type->align);
-	struct qbe_value sz = constl(obj->type->size);
-	pushprei(ctx->current, &qv, alloc, &sz, NULL);
+		struct qbe_value qv = mklval(ctx, &gb->value);
+		enum qbe_instr alloc = alloc_for_align(obj->type->align);
+		struct qbe_value sz = constl(obj->type->size);
+		pushprei(ctx->current, &qv, alloc, &sz, NULL);
 
-	gen_store(ctx, gb->value, value);
+		gen_store(ctx, gb->value, value);
+	};
 
 	gen_expr_branch(ctx, expr->_if.true_branch, gvout, out);
 	if (expr->_if.true_branch->result->storage != STORAGE_NEVER) {

@@ -92,9 +92,17 @@ fn errors() void = {
 	")!;
 };
 
+fn misc() void = {
+	let q: (int | uint) = 10i;
+	if (let _: int = q) {
+		void;
+	} else abort();
+};
+
 export fn main() void = {
 	tagged();
 	pointers();
 	results();
 	errors();
+	misc();
 };

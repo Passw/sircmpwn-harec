@@ -2552,9 +2552,11 @@ check_expr_if_let(struct context *ctx,
 
 	// Process true branch w/binding and a new scope
 	scope_push(&ctx->scope, SCOPE_IF);
-	expr->_if.object = scope_insert(ctx->scope, O_BIND,
-		abinding->names.name, abinding->names.name,
-		type, NULL);
+	if (abinding->names.name != NULL) {
+		expr->_if.object = scope_insert(ctx->scope, O_BIND,
+			abinding->names.name, abinding->names.name,
+			type, NULL);
+	}
 
 	struct match_context mctx = {0};
 	if (!begin_check_match(ctx, &mctx, expr, init->result, abinding->initializer->loc)) {
