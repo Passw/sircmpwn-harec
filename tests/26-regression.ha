@@ -326,4 +326,10 @@ export fn main() void = {
 
 	let x = &(void: (int | void));
 	*x as void;
+
+	compile(status::CHECK, "
+		type a = !void;
+		type b = !void;
+		fn f() void = (a: (a | b))!;
+	")!;
 };

@@ -2856,6 +2856,13 @@ check_expr_propagate(struct context *ctx,
 	const struct type *result_type =
 		type_store_lookup_tagged(ctx, aexpr->loc, &res);
 
+	if (result_type->storage == STORAGE_NEVER) {
+		error(ctx, aexpr->loc, expr,
+			"Cannot use error %s on tagged type with no non-error members",
+			aexpr->propagate.abort ? "assertion" : "propagation");
+		return;
+	}
+
 	// Lower to a match expression
 	expr->type = EXPR_MATCH;
 	expr->match.value = lvalue;
