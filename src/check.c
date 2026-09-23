@@ -3109,6 +3109,10 @@ check_struct_exhaustive(struct context *ctx,
 
 	// XXX: O(n^2)?
 	while (sf) {
+		if (sf->name && strcmp(sf->name, "_") == 0) {
+			sf = sf->next;
+			continue;
+		}
 		bool found = false;
 		for (struct ast_field_value *f = af; f;
 				f = f->next) {

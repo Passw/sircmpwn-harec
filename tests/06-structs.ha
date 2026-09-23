@@ -249,6 +249,11 @@ type autofill_union = struct {
 	},
 };
 
+type simple_padded = struct {
+	_: u8,
+	x: u8,
+};
+
 fn autofill() void = {
 	let x = coords { x = 10, ... };
 	assert(x.x == 10 && x.y == 0);
@@ -277,6 +282,10 @@ fn autofill() void = {
 	let au = autofill_union { ... };
 	let au = autofill_union { i = 5, ... };
 	let au = autofill_union { i = 5 };
+
+	let sp = simple_padded { x = 0 };
+	let sp = simple_padded { x = 0, ... };
+	let sp = simple_padded { ... };
 };
 
 // note: this errors out if it's a struct; see invariant test below
