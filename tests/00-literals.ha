@@ -44,6 +44,9 @@ fn assignment() void = {
 	ftu1 = 0.0;
 	ftu2 = 0.0;
 	ftu3 = 0.0;
+	let u2: u8 = -1;
+	assert(u2 == 255);
+	u2 = -128 + 255;
 
 	i = 'a';
 	u = 'a';
@@ -66,6 +69,7 @@ fn assignment() void = {
 
 	let failures = [
 		"fn f() void = { let i = 0i8; i = 128; };",
+		"fn f() void = { let u = 0u8; u = -129; };",
 
 		"fn f() void = { let u = 0u32; u = 4294967296; };",
 		"fn f() void = { let f = 0.0f64; f = 0; };",

@@ -755,13 +755,11 @@ tagged_select_subtype(struct context *ctx, const struct type *tagged,
 	return NULL;
 }
 
+// always treats t as signed
 static int64_t
-min_value(struct context *ctx, const struct type *t)
+signed_min_value(struct context *ctx, const struct type *t)
 {
 	assert(type_is_integer(ctx, t));
-	if (!type_is_signed(ctx, t)) {
-		return 0;
-	}
 	if (t->size == sizeof(int64_t)) {
 		return INT64_MIN;
 	}
@@ -849,9 +847,10 @@ lower_flexible(struct context *ctx, const struct type *old, const struct type *n
 		case STORAGE_FCONST:
 			new = &builtin_type_f64;
 			break;
-		case STORAGE_ICONST:
-			if (old->flexible.max <= (int64_t)max_value(ctx, &builtin_type_int)
-					&& old->flexible.min >= min_value(ctx, &builtin_type_int)) {
+		case STORAGE_ICONST:;
+			int64_t int_min = signed_min_value(ctx, &builtin_type_int);
+			int64_t int_max = (int64_t)max_value(ctx, &builtin_type_int);
+			if (old->flexible.max <= int_max && old->flexible.min >= int_min) {
 				new = &builtin_type_int;
 			} else {
 				new = &builtin_type_i64;
@@ -934,7 +933,7 @@ promote_flexible(struct context *ctx,
 		if (!type_is_integer(ctx, a)) {
 			return NULL;
 		}
-		if (type_is_signed(ctx, a) && min_value(ctx, a) > b->flexible.min) {
+		if (signed_min_value(ctx, a) > b->flexible.min) {
 			return NULL;
 		}
 		if (b->flexible.max > 0 && max_value(ctx, a) < (uint64_t)b->flexible.max) {
