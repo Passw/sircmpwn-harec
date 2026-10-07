@@ -263,8 +263,7 @@ check_embedded_member(struct context *ctx,
 }
 
 static void
-shift_fields(struct context *ctx,
-	const struct ast_struct_union_field *afield, struct struct_field *parent)
+shift_fields(struct context *ctx, struct struct_field *parent)
 {
 	if (parent->offset == 0) {
 		// We need to return early here in order to avoid dealiasing an
@@ -293,7 +292,7 @@ shift_fields(struct context *ctx,
 		if (field->name) {
 			new->name = field->name;
 		} else {
-			shift_fields(ctx, NULL, new);
+			shift_fields(ctx, new);
 		}
 		// Sub-subfields are shifted by field->offset in the recursive
 		// shift_fields call, delay adding it to new->offset to avoid
@@ -339,7 +338,7 @@ struct_init_from_atype(struct context *ctx, struct type *type,
 			// type_get_field far easier to implement and doesn't
 			// cause any trouble in gen since offsets are only used
 			// there for sorting fields.
-			shift_fields(ctx, afield, field);
+			shift_fields(ctx, field);
 		}
 		*next = field;
 		next = &field->next;
