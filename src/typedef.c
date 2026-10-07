@@ -446,7 +446,8 @@ emit_decl_type(const struct declaration *decl, FILE *out)
 	} else {
 		xfprintf(out, "%" PRIu8, decl->type->align);
 	}
-	xfprintf(out, ", id: %" PRIu32 "\n", decl->type->id);
+	xfprintf(out, ", id: %" PRIu32 " -> %" PRIu32 "\n",
+	         decl->type->id, decl->type->alias.type->id);
 	free(ident);
 }
 
