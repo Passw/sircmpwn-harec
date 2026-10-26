@@ -1297,6 +1297,7 @@ gen_expr_binarithm(struct gen_context *ctx, const struct expression *expr)
 		struct qbe_value bshort = mklabel(ctx, &lshort, ".%d");
 		struct gen_value lval = gen_expr(ctx, expr->binarithm.lvalue);
 		struct qbe_value qlval = mkqval(ctx, &lval);
+		qlval = extend(ctx, qlval, &builtin_type_bool);
 		pushi(ctx->current, &qresult, Q_COPY, &qlval, NULL);
 		if (expr->binarithm.op == BIN_LAND) {
 			pushi(ctx->current, NULL, Q_JNZ, &qresult, &brval,
@@ -1308,6 +1309,7 @@ gen_expr_binarithm(struct gen_context *ctx, const struct expression *expr)
 		push(&ctx->current->body, &lrval);
 		struct gen_value rval = gen_expr(ctx, expr->binarithm.rvalue);
 		struct qbe_value qrval = mkqval(ctx, &rval);
+		qrval = extend(ctx, qrval, &builtin_type_bool);
 		pushi(ctx->current, &qresult, Q_COPY, &qrval, NULL);
 		if (rtype->storage != STORAGE_NEVER) {
 			pushi(ctx->current, NULL, Q_JMP, &bshort, NULL);
