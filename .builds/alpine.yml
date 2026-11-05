@@ -29,7 +29,7 @@ tasks:
 - stdlib-tests: |
     cd hare
     cp configs/linux.mk config.mk
-    make -j2 check
+    HARETEST_INCLUDE=integration make -j2 check
 submitter:
   git.sr.ht:
     allow-refs:
