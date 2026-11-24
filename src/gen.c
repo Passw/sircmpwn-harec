@@ -3438,8 +3438,6 @@ gen_expr(struct gen_context *ctx, const struct expression *expr)
 	case EXPR_MATCH:
 		out = gen_expr_match_with(ctx, expr, NULL);
 		break;
-	case EXPR_PROPAGATE:
-		assert(0); // Lowered in check (for now?)
 	case EXPR_RETURN:
 		gen_expr_return(ctx, expr);
 		break;
@@ -3473,6 +3471,9 @@ gen_expr(struct gen_context *ctx, const struct expression *expr)
 	case EXPR_UNDEFINED:
 		out = gv_void; // no-op
 		break;
+	case EXPR_DEFINED:
+	case EXPR_PROPAGATE:
+		abort(); // Lowered in check
 	}
 
 	if (expr->result->storage == STORAGE_NEVER) {

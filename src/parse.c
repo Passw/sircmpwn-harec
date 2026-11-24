@@ -1432,6 +1432,19 @@ parse_va_expression(struct lexer *lexer)
 }
 
 static struct ast_expression *
+parse_defined_expression(struct lexer *lexer)
+{
+	struct token tok;
+	struct ast_expression *expr = mkexpr(lexer->loc);
+	expr->type = EXPR_DEFINED;
+
+	want(lexer, T_LPAREN, &tok);
+	expr->defined.targ = parse_identifier(lexer, NULL, NULL);
+	want(lexer, T_RPAREN, &tok);
+	return expr;
+}
+
+static struct ast_expression *
 parse_builtin_expression(struct lexer *lexer)
 {
 	struct token tok;
@@ -1462,6 +1475,8 @@ parse_builtin_expression(struct lexer *lexer)
 	case T_VASTART:
 		unlex(lexer, &tok);
 		return parse_va_expression(lexer);
+	case T_ATTR_DEFINED:
+		return parse_defined_expression(lexer);
 	default:
 		unlex(lexer, &tok);
 		break;

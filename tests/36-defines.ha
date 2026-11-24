@@ -109,6 +109,9 @@ fn contextual() void = {
 	", "-DTESTDEFINE:[_]int=[67...]:![3]int")!;
 };
 
+static assert(@defined(contextual));
+static assert(!@defined(undefined));
+
 export fn main() void = {
 	import();
 	mandatory();

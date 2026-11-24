@@ -229,6 +229,10 @@ struct ast_expression_defer {
 	struct ast_expression *deferred;
 };
 
+struct ast_expression_defined {
+	struct ident *targ;
+};
+
 struct ast_expression_delete {
 	struct ast_expression *expr;
 	bool is_static;
@@ -365,6 +369,7 @@ struct ast_expression {
 		struct ast_expression_compound compound;
 		struct ast_expression_control control;
 		struct ast_expression_defer defer;
+		struct ast_expression_defined defined;
 		struct ast_expression_delete delete;
 		struct ast_expression_for _for;
 		struct ast_expression_free free;

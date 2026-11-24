@@ -1880,6 +1880,19 @@ check_expr_compound(struct context *ctx,
 }
 
 static void
+check_expr_defined(struct context *ctx,
+	const struct ast_expression *aexpr,
+	struct expression *expr,
+	const struct type *hint)
+{
+	expr->type = EXPR_LITERAL;
+	expr->result = &builtin_type_bool;
+
+	struct scope_object *obj = scope_lookup(ctx->scope, aexpr->defined.targ);
+	expr->literal.bval = obj != NULL;
+}
+
+static void
 check_expr_literal(struct context *ctx,
 	const struct ast_expression *aexpr,
 	struct expression *expr,
@@ -3842,6 +3855,9 @@ check_expression(struct context *ctx,
 		break;
 	case EXPR_DEFER:
 		check_expr_defer(ctx, aexpr, expr, hint);
+		break;
+	case EXPR_DEFINED:
+		check_expr_defined(ctx, aexpr, expr, hint);
 		break;
 	case EXPR_DELETE:
 		check_expr_delete(ctx, aexpr, expr, hint);
